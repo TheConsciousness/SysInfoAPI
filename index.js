@@ -2,6 +2,7 @@ const port = process.env.PORT || 6420;
 const http = require('http');
 const os = require('os');
 const { memoryUsage } = require('process');
+const { exec } = require("child_process");
 
 var memObject = {};
 var cpuObject = {};
@@ -16,7 +17,6 @@ http.createServer((req,res)=> {
         memObject.Memory.Percentage = Math.round((os.freemem()/os.totalmem())*100);
     }
     async function getCPU () {
-        const { exec } = require("child_process");
         
         try {
             await exec('top -l 1 | grep -E "^CPU"', (error, stdout, stderr) => {
@@ -41,8 +41,8 @@ http.createServer((req,res)=> {
                 cpuObject.CPU.System = splittin[1].replace(" sys", "").trim();
                 cpuObject.CPU.Used = Math.round((parseFloat(cpuObject.CPU.User) + parseFloat(cpuObject.CPU.System))) + "%";
                 cpuObject.CPU.Free = splittin[2].replace(" idle \n", "").trim();
+                console.log("test");
                 return cpuObject;
-                //console.log(cpuObject);
             })
         } catch (err) {
           console.log(`Catch: ${err}`);
