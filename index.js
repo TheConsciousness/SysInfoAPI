@@ -1,54 +1,47 @@
 const port = process.env.PORT || 6420;
 const http = require('http');
 const os = require('os');
-const { memoryUsage } = require('process');
-const { exec } = require("child_process");
+const fs = require('fs');
+const util = require('util');
+const exec = require("child_process").exec;
 
 var memObject = {};
 var cpuObject = {};
 cpuObject.CPU = {};
 
-http.createServer((req,res)=> {
+const execa = util.promisify(exec);
+
+http.createServer(async (req,res)=> {
 
     function getMemory() {
         memObject.Memory = {};
         memObject.Memory.Free = os.freemem();
         memObject.Memory.Total = os.totalmem();
-        memObject.Memory.Percentage = Math.round((os.freemem()/os.totalmem())*100);
+        memObject.Memory.PercentUsed = Math.round((os.freemem()/os.totalmem())*100) + "%";
+        return memObject;
     }
-    async function getCPU () {
-        
+    async function asyncGetCPU() {
         try {
-            await exec('top -l 1 | grep -E "^CPU"', (error, stdout, stderr) => {
-                if (error) {
-                    console.log(`error: ${error.message}`);
-                    res.statusCode = 500;
-                    res.end(`${error.message}`);
-                    return;
-                }
-                if (stderr) {
-                    console.log(`stderr: ${stderr}`);
-                    res.statusCode = 500;
-                    res.end(`${stderr}`);
-                    return;
-                }
-                res.statusCode = 200;
-
-                let splittin = stdout.split(':');
-                splittin = splittin[1].split(",");
-
-                cpuObject.CPU.User = splittin[0].replace(" user", "").trim();
-                cpuObject.CPU.System = splittin[1].replace(" sys", "").trim();
-                cpuObject.CPU.Used = Math.round((parseFloat(cpuObject.CPU.User) + parseFloat(cpuObject.CPU.System))) + "%";
-                cpuObject.CPU.Free = splittin[2].replace(" idle \n", "").trim();
-                console.log("test");
-                return cpuObject;
-            })
-        } catch (err) {
-          console.log(`Catch: ${err}`);
-          res.statusCode = 500;
-          res.end(`${err}`);
-        }       
+            const output = await execa('top -l 1 | grep -E "^CPU"');
+            //console.log(JSON.stringify(output.stdout));
+    
+            res.statusCode = 200;
+            let splittin = output.stdout.split(':');
+            splittin = splittin[1].split(",");
+    
+            cpuObject.CPU.User = splittin[0].replace(" user", "").trim();
+            cpuObject.CPU.System = splittin[1].replace(" sys", "").trim();
+            cpuObject.CPU.Used = Math.round((parseFloat(cpuObject.CPU.User) + parseFloat(cpuObject.CPU.System))) + "%";
+            cpuObject.CPU.Free = splittin[2].replace(" idle \n", "").trim();
+    
+            //console.log(cpuObject);
+            return cpuObject
+        }
+        catch (err) {
+            console.log(`Catch: ${err}`);
+            res.statusCode = 500;
+            res.end(`${err}`);
+        }
     }
 
     if (req.url === "/memory") {
@@ -59,9 +52,10 @@ http.createServer((req,res)=> {
     }
     else if (req.url === "/cpu") {
         res.setHeader('Content-Type', 'application/json');
-        getCPU().then(() => {
-            res.end(JSON.stringify(cpuObject, null, 2));
+        asyncGetCPU().then((data)=>{
+            res.end(JSON.stringify(data, null, 2));
         });
+        
     }
     else if (req.url === "/") {
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -72,9 +66,9 @@ http.createServer((req,res)=> {
         res.end("");
     }
     else if (req.url === "/both") {
-        getCPU().then(()=>{
+        asyncGetCPU().then((data)=>{
             getMemory();
-            let bothObject = {...cpuObject, ...memObject};
+            let bothObject = {...data, ...memObject};
             //console.log(bothObject);
             res.end(JSON.stringify(bothObject, null, 2));
         });
