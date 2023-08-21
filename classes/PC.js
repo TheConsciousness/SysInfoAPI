@@ -10,16 +10,6 @@ const formatBytes = (bytes, decimals = 2) => {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
-function formatDate(timestamp) {
-    const date = new Date(timestamp);
-    const formattedMonth = String(date.getMonth() + 1).padStart(2, '0');
-    const formattedDay = String(date.getDate()).padStart(2, '0');
-    const formattedYear = String(date.getFullYear() % 100).padStart(2, '0');
-    const formattedHours = String(date.getHours()).padStart(2, '0');
-    const formattedMinutes = String(date.getMinutes()).padStart(2, '0');
-    const formattedSeconds = String(date.getSeconds()).padStart(2, '0');
-    return `${formattedMonth}/${formattedDay}/${formattedYear} ${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
-}
 
 class PC {
     
@@ -30,9 +20,9 @@ class PC {
     CPU = {};
 
     constructor(name) {
-        this.Hostname = name;
+        this.Hostname = os.hostname();
     }
-    async freshCPU() {
+    async getCPU() {
         this.CPU = {};
         try {
             //throw new Error('Couldnt retrieve CPU stats.');
@@ -53,7 +43,7 @@ class PC {
             return this.CPU;
         }
     }
-    async freshHDDs() {
+    async getHDDs() {
         this.HDDs = {};
         try {
             const disks = await nodeDiskInfo.getDiskInfo();
@@ -75,7 +65,7 @@ class PC {
             return this.HDDs;
         }
     }
-    freshMemory() {
+    getMemory() {
         try {
             this.Memory = {};
             this.Memory.Free = formatBytes(os.freemem());
@@ -88,10 +78,10 @@ class PC {
             return this.Memory;
         }
     }
-    async allStats() {
+    async getAll() {
         try {
             //throw new Error("CPU");
-            this.CPU = {CPU: await this.freshCPU()};
+            this.CPU = {CPU: await this.getCPU()};
         } catch (cpuerr) {
             this.CPU = {CPU: cpuerr.message};
         }
@@ -103,7 +93,7 @@ class PC {
         }
 
         try {
-            this.Memory = {Memory: await this.freshMemory()};
+            this.Memory = {Memory: this.getMemory()};
             //throw new Error("Memory");
         } catch (memerr) {
             this.Memory = {Memory: memerr.message};

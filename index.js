@@ -28,21 +28,21 @@ http.createServer(async (req,res)=> {
             })
             break;
         case "/memory":
-            res.end(JSON.stringify(currentPC.freshMemory(), null, 2));
+            res.end(JSON.stringify(currentPC.getMemory(), null, 2));
             break;
         case "/cpu":
-            res.end(JSON.stringify(await currentPC.freshCPU(), null, 2));
+            res.end(JSON.stringify(await currentPC.getCPU(), null, 2));
             break;
         case "/hdd":
-            res.end(JSON.stringify(await currentPC.freshHDDs(), null, 2));
+            res.end(JSON.stringify(await currentPC.getHDDs(), null, 2));
             break;
         case "/all":
-            res.end(JSON.stringify(await currentPC.allStats(), null, 2));
+            res.end(JSON.stringify(await currentPC.getAll(), null, 2));
             break;
         default:
-            res.setHeader('Content-Type', 'text/plain');
+            res.setHeader('Content-Type', 'text/html');
             res.statusCode = 404;
-            res.end("404");
+            res.end("<span style=font-size:50vw;>404!</span>");
             break;
     }
     
