@@ -5,6 +5,8 @@ const fs = require('fs');
 const nodeDiskInfo = require('node-disk-info');
 const { memoryUsage } = require('process');
 
+var allObject = {};
+
 class PC {
     Hostname = "";
     HDDs = {};
@@ -15,6 +17,7 @@ class PC {
         this.Hostname = name;
     }
     async freshCPU() {
+        this.CPU = {};
         try {
             //throw new Error('Couldnt retrieve CPU stats.');
             const { stdout } = await require('util').promisify(require('child_process').exec)('top -l 1 | grep -E "^CPU"');
@@ -25,17 +28,17 @@ class PC {
             this.CPU.System = splittin[1].replace(" sys", "").trim();
             this.CPU.Used = Math.round((parseFloat(this.CPU.User) + parseFloat(this.CPU.System))) + "%";
             this.CPU.Free = splittin[2].replace(" idle \n", "").trim();
-            this.CPU.LastRefresh = formatDate(Date.now());
 
-            return {CPU: this.CPU};
+            return this.CPU;
         }
         catch (err) {
-            console.log(`Catch: ${err}`);
+            console.log(`PC.freshCPU(): ${err}`);
             this.CPU = err.message;
-            return {CPU: this.CPU};
+            return this.CPU;
         }
     }
     async freshHDDs() {
+        this.HDDs = {};
         try {
             const disks = await nodeDiskInfo.getDiskInfo();
             this.HDDs = 
@@ -47,8 +50,7 @@ class PC {
                         _blocks: formatBytes(disk._blocks),
                         _used: formatBytes(disk._used)
                     }
-                }),
-                LastRefresh: formatDate(Date.now())
+                })
             }
             return this.HDDs;
         } catch (err) {
@@ -59,48 +61,45 @@ class PC {
     }
     freshMemory() {
         try {
+            this.Memory = {};
             this.Memory.Free = formatBytes(os.freemem());
             this.Memory.Total = formatBytes(os.totalmem());
             this.Memory.PercentUsed = Math.round((os.freemem()/os.totalmem())*100) + "%";
-            this.Memory.LastRefresh = formatDate(Date.now());
-            return {Memory: this.Memory};
+            return this.Memory;
         } catch (err) {
             console.log(`PC.freshMemory(): ${err}`);
             this.Memory = err.message;
-            return {Memory: this.Memory};
+            return this.Memory;
         }
     }
     async allStats() {
         try {
             //throw new Error("CPU");
-            var cpuData = await this.freshCPU();
+            this.CPU = {CPU: await this.freshCPU()};
         } catch (cpuerr) {
-            var cpuData = {CPUs:cpuerr.message};
+            this.CPU = {CPU: cpuerr.message};
         }
         try {
             //throw new Error("HDD");
-            var hddData = {};
-            hddData.HDDs = await nodeDiskInfo.getDiskInfo();
-            hddData.HDDs.push({LastRefresh: formatDate(Date.now())});
+            this.HDDs = {HDDs: await nodeDiskInfo.getDiskInfo()};
         } catch (hdderr) {
-            var hddData = {HDDs:hdderr.message,
-                LastRefresh: formatDate(Date.now())};
+            this.HDDs = {HDDs: hdderr.message};
         }
 
         try {
-            var memData = await this.freshMemory();
+            this.Memory = {Memory: await this.freshMemory()};
             //throw new Error("Memory");
         } catch (memerr) {
-            memData = {Memory:memerr.message};
+            this.Memory = {Memory: memerr.message};
         }
 
         try {
-            throw new Error("All error!");
+            //throw new Error("All error!");
             allObject = {
                 [os.hostname()]:{
-                    ...cpuData,
-                    ...memData,
-                    ...hddData
+                    ...this.CPU,
+                    ...this.Memory,
+                    ...this.HDDs
                     
                 //  }).slice(0,-1) // Use this is the last value is garbage
             }}
@@ -111,25 +110,6 @@ class PC {
     }
 }
 
-
-const currentPC = new PC();
-
-var hddObject = {};
-var allObject = {};
-var memObject = {};
-var cpuObject = {};
-
-cpuObject[os.hostname()] = {};
-memObject[os.hostname()] = {};
-hddObject[os.hostname()] = {};
-
-cpuObject[os.hostname()].CPU = {};
-memObject[os.hostname()].Memory = {};
-hddObject[os.hostname()].HDDs = {};
-
-const asyncGetCPU = async () => {
-    
-}
 const formatBytes = (bytes, decimals = 2) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -150,6 +130,8 @@ function formatDate(timestamp) {
 }
 
 http.createServer(async (req,res)=> {
+    const currentPC = new PC();
+    
     res.setHeader('Content-Type', 'application/json');
     res.statusCode = 200;
 
