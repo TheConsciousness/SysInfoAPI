@@ -2,43 +2,84 @@ const port = process.env.SYSINFOAPI_PORT || 6420;
 const http = require('http');
 const os = require('os');
 const fs = require('fs');
-const util = require('util');
-const exec = require("child_process").exec;
 const nodeDiskInfo = require('node-disk-info');
-const path = require('path');
+const { memoryUsage } = require('process');
 
-const execa = util.promisify(exec);
+class PC {
+    Hostname = "";
+    HDDs = {};
+    Memory = {};
+    CPU = {};
+    constructor(name) {
+        this.Hostname = name;
+    }
+    freshCPU() {
+
+    }
+    freshHDDs() {
+
+    }
+    freshMemory() {
+        try {
+            this.Memory.Free = formatBytes(os.freemem());
+            this.Memory.Total = formatBytes(os.totalmem());
+            this.Memory.PercentUsed = Math.round((os.freemem()/os.totalmem())*100) + "%";
+            return this.Memory;
+        } catch (err) {
+            console.log(`PC.freshMemory(): ${err}`);
+            this.Memory = err.message;
+            return this.Memory;
+        }
+    }
+}
 
 var hddObject = {};
 var allObject = {};
 var memObject = {};
 var cpuObject = {};
 
-cpuObject.CPU = {};
+cpuObject[os.hostname()] = {};
+memObject[os.hostname()] = {};
+hddObject[os.hostname()] = {};
+
+cpuObject[os.hostname()].CPU = {};
+memObject[os.hostname()].Memory = {};
+hddObject[os.hostname()].HDDs = {};
 
 const getMemory = () => {
-    memObject.Memory = {};
-    memObject.Memory.Free = formatBytes(os.freemem());
-    memObject.Memory.Total = formatBytes(os.totalmem());
-    memObject.Memory.PercentUsed = Math.round((os.freemem()/os.totalmem())*100) + "%";
-    return memObject;
+    try {
+        //throw new Error('Couldnt retrieve memory stats.');
+        memObject[os.hostname()].Memory = {};
+        memObject[os.hostname()].Memory.Free = formatBytes(os.freemem());
+        memObject[os.hostname()].Memory.Total = formatBytes(os.totalmem());
+        memObject[os.hostname()].Memory.PercentUsed = Math.round((os.freemem()/os.totalmem())*100) + "%";
+
+        return memObject;
+    } catch (err) {
+        console.log(`Catch: ${err}`);
+        memObject[os.hostname()].Memory = err.message;
+        return memObject;
+    }
+    
 }
 const asyncGetCPU = async () => {
     try {
-        const output = await execa('top -l 1 | grep -E "^CPU"');
-        let splittin = output.stdout.split(':');
+        //throw new Error('Couldnt retrieve CPU stats.');
+        const { stdout } = await require('util').promisify(require('child_process').exec)('top -l 1 | grep -E "^CPU"');
+        let splittin = stdout.split(':');
         splittin = splittin[1].split(",");
 
-        cpuObject.CPU.User = splittin[0].replace(" user", "").trim();
-        cpuObject.CPU.System = splittin[1].replace(" sys", "").trim();
-        cpuObject.CPU.Used = Math.round((parseFloat(cpuObject.CPU.User) + parseFloat(cpuObject.CPU.System))) + "%";
-        cpuObject.CPU.Free = splittin[2].replace(" idle \n", "").trim();
+        cpuObject[os.hostname()].CPU.User = splittin[0].replace(" user", "").trim();
+        cpuObject[os.hostname()].CPU.System = splittin[1].replace(" sys", "").trim();
+        cpuObject[os.hostname()].CPU.Used = Math.round((parseFloat(cpuObject[os.hostname()].CPU.User) + parseFloat(cpuObject[os.hostname()].CPU.System))) + "%";
+        cpuObject[os.hostname()].CPU.Free = splittin[2].replace(" idle \n", "").trim();
 
         return cpuObject
     }
     catch (err) {
         console.log(`Catch: ${err}`);
-        return err;
+        cpuObject[os.hostname()].CPU = err.message;
+        return cpuObject;
     }
 }
 const formatBytes = (bytes, decimals = 2) => {
@@ -53,23 +94,14 @@ const formatBytes = (bytes, decimals = 2) => {
 http.createServer(async (req,res)=> {
     res.setHeader('Content-Type', 'application/json');
     res.statusCode = 200;
-    
-    if (req.url === "/memory") {
-        getMemory();
-        res.end(JSON.stringify(memObject, null, 2));
-    }
-    else if (req.url === "/cpu") {
-        const cpuData = await asyncGetCPU();
-        res.end(JSON.stringify(cpuData, null, 2));
-    }
-    else if (req.url === "/") {
+
+    if (req.url === "/") {
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.end("<a href=/cpu>CPU</a><br/><a href=/memory>Memory</a><br/><a href=/all>All</a>");
     }
-
     else if (req.url === "/favicon.ico") {
         res.setHeader('Content-Type', 'image/x-icon');
-        const faviconPath = path.join(__dirname, 'favicon.ico');
+        const faviconPath = require('path').join(__dirname, 'favicon.ico');
 
         fs.readFile(faviconPath, (err, data) => {
             if (err) {
@@ -80,57 +112,59 @@ http.createServer(async (req,res)=> {
             }
         })
     }
+    else if (req.url === "/memory") {
+        const memData = getMemory();
+        res.end(JSON.stringify(memData, null, 2));
+    }
 
-    else if (req.url === "/all") {
-        const [cpuData, hddData] = await Promise.all([asyncGetCPU(), nodeDiskInfo.getDiskInfo()]);
-        
-        allObject = {
-            ...cpuData,
-            ...getMemory(),
-            HDDs: hddData.map(disk => {
-                return {
-                    ...disk,
-                    _available: formatBytes(disk._available),
-                    _blocks: formatBytes(disk._blocks),
-                    _used: formatBytes(disk._used)
-                }
-            })
-        //  }).slice(0,-1) // Use this is the last value is garbage
-        };
-        res.end(JSON.stringify(allObject, null, 2));
+    else if (req.url === "/cpu") {
+        const cpuData = await asyncGetCPU();
+        res.end(JSON.stringify(cpuData, null, 2));
     }
 
     else if (req.url === "/hdd") {
-        const disks = await nodeDiskInfo.getDiskInfo();
-
-        hddObject = {
-            HDDs: disks.map(disk => {
-                return {
-                    ...disk,
-                    _available: formatBytes(disk._available),
-                    _blocks: formatBytes(disk._blocks),
-                    _used: formatBytes(disk._used)
-                }
-            })
+        try {
+            const disks = await nodeDiskInfo.getDiskInfo();
+            hddObject = {
+                [os.hostname()]:{
+                HDDs: disks.map(disk => {
+                    return {
+                        ...disk,
+                        _available: formatBytes(disk._available),
+                        _blocks: formatBytes(disk._blocks),
+                        _used: formatBytes(disk._used)
+                    }
+                })
+            }}
+        } catch (error) {
+            hddObject[os.hostname()].HDDs = error.message;
         }
         res.end(JSON.stringify(hddObject, null, 2));
     }
 
-    else if (req.url === "/test") {
-        const [cpuData, hddData] = await Promise.all([asyncGetCPU(), nodeDiskInfo.getDiskInfo()]);
-
-        allObject = {
-            ...cpuData,
-            ...getMemory(), 
-            HDDs: hddData.map(disk => {
-                return {
-                    ...disk,
-                    _available: formatBytes(disk._available),
-                    _blocks: formatBytes(disk._blocks),
-                    _used: formatBytes(disk._used)
-                }
-            })
-        };
+    else if (req.url === "/all") {
+        try {
+            const [cpuData, hddData] = await Promise.all([asyncGetCPU(), nodeDiskInfo.getDiskInfo()]);
+            const memData = getMemory();
+            allObject = {
+                [os.hostname()]:{
+                    ...cpuData[os.hostname()],
+                    ...memData[os.hostname()],
+                    HDDs: hddData.map(disk => {
+                        return {
+                            ...disk,
+                            _available: formatBytes(disk._available),
+                            _blocks: formatBytes(disk._blocks),
+                            _used: formatBytes(disk._used)
+                        }
+                    })
+                //  }).slice(0,-1) // Use this is the last value is garbage
+            }}
+        } catch (error) {
+            allObject[os.hostname()] = error.message;
+        }
         res.end(JSON.stringify(allObject, null, 2));
     }
+
+    
 }).listen(port);
