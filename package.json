@@ -4,9 +4,10 @@
   "description": "Small API written in Node to retrieve system software/hardware information and return it to the user.",
   "main": "index.js",
   "scripts": {
-    "test": "echo 'No tests created yet!' && exit 1",
-    "start": "standard"
-  },
+    "start": "concurrently \"npm run server\" \"npm run frontend\"",
+    "server": "node index.js",
+    "frontend": "npm run --prefix frontend start"
+   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/TheConsciousness/SysInfoAPI.git"
@@ -24,5 +25,8 @@
     "express": "^4.18.2",
     "node-disk-info": "^1.3.0",
     "nodemon": "^3.0.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
   }
 }
