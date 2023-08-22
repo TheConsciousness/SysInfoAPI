@@ -1,4 +1,11 @@
-import React from 'react'
+import React, { useEffect } from 'react'
+import { useSelector, useDispatch } from 'react-redux';
+
+export const setObject = (newObject) => ({
+  type: 'STORE_OBJECT',
+  newObject
+});
+
 import {
   CCard,
   CCardBody,
@@ -19,7 +26,7 @@ import {
   cilStorage
 } from '@coreui/icons'
 
-const apiReturn = {
+const defaultPCStats = {
   "Big-Mac.local": {
     "CPU": {
       "User": "4.60%",
@@ -94,6 +101,31 @@ const apiReturn = {
 };
 
 const DefaultLayout = () => {
+  // eslint-disable-next-line
+  const pcStats = useSelector(state => state);
+  // eslint-disable-next-line
+  const dispatch = useDispatch();
+
+  //dispatch(setObject(defaultPCStats));
+
+  useEffect(() => {
+    updatePCStats();
+  }, []);
+
+  // eslint-disable-next-line
+  const updatePCStats = async () => {
+    fetch('http://localhost:1337/all')
+    .then(response => response.json())
+    .then((apiReturn) => {
+      console.log(apiReturn);
+      dispatch(setObject("test"));
+      console.log(JSON.stringify(pcStats));
+    })
+    .catch(error => {
+      console.error('Error fetching data:', error);
+    });
+  }
+
   return (
     <>
       <div>
@@ -103,7 +135,7 @@ const DefaultLayout = () => {
             <CRow>
               <CCol xs>
                 <CCard className="mb-4">
-                  <CCardHeader>{Object.keys(apiReturn)[0]}</CCardHeader>
+                  <CCardHeader>{Object.keys(defaultPCStats)[0]}</CCardHeader>
                   <CCardBody>
                     <CRow>
                       <CCol xs={12} md={12} xl={12}>
@@ -114,10 +146,10 @@ const DefaultLayout = () => {
                           <div className="progress-group-header">
                             <CIcon className="me-2" icon={cilMonitor} size="lg" />
                             <span>User</span>
-                            <span className="ms-auto fw-semibold">{apiReturn['Big-Mac.local'].CPU.Used.replace(/%/g, '')}%</span>
+                            <span className="ms-auto fw-semibold">{defaultPCStats['Big-Mac.local'].CPU.Used.replace(/%/g, '')}%</span>
                           </div>
                           <div className="progress-group-bars">
-                            <CProgress thin color="warning" value={parseInt(apiReturn['Big-Mac.local'].CPU.Used.replace(/%/g, ''))} />
+                            <CProgress thin color="warning" value={parseInt(defaultPCStats['Big-Mac.local'].CPU.Used.replace(/%/g, ''))} />
                           </div>
                         </div>
 
@@ -129,12 +161,12 @@ const DefaultLayout = () => {
                             <CIcon className="me-2" icon={cilStorage} size="lg" />
                             <span>Used</span>
                             <span className="ms-auto fw-semibold">
-                              {apiReturn['Big-Mac.local'].Memory.Free} / {apiReturn['Big-Mac.local'].Memory.Total}
-                              <span className="text-medium-emphasis small">({apiReturn['Big-Mac.local'].Memory.PercentUsed})</span>
+                              {defaultPCStats['Big-Mac.local'].Memory.Free} / {defaultPCStats['Big-Mac.local'].Memory.Total}
+                              <span className="text-medium-emphasis small">({defaultPCStats['Big-Mac.local'].Memory.PercentUsed})</span>
                             </span>
                           </div>
                           <div className="progress-group-bars">
-                            <CProgress thin color="success" value={parseInt(apiReturn['Big-Mac.local'].Memory.PercentUsed.replace(/%/g, ''))} />
+                            <CProgress thin color="success" value={parseInt(defaultPCStats['Big-Mac.local'].Memory.PercentUsed.replace(/%/g, ''))} />
                           </div>
                         </div>
                       </CCol>
@@ -157,7 +189,7 @@ const DefaultLayout = () => {
                       </CTableHead>
 
                       <CTableBody>
-                        {apiReturn['Big-Mac.local'].HDDs.map((item, index) => (
+                        {defaultPCStats['Big-Mac.local'].HDDs.map((item, index) => (
                           <CTableRow v-for="item in tableItems" key={index}>
                             <CTableDataCell>
                               <div className="small text-medium-emphasis">{item._filesystem}</div>

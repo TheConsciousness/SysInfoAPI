@@ -6,6 +6,9 @@ const PC = require("./classes/PC");
 http.createServer(async (req,res)=> {
     const currentPC = new PC();
 
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Content-Type', 'application/json');
     res.statusCode = 200;
 
