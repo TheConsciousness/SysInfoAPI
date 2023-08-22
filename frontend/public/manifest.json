@@ -1,15 +1,15 @@
 {
-  "short_name": "CoreUI-React",
-  "name": "CoreUI-React sample",
+  "short_name": "SysInfoAPI",
+  "name": "SysInfoAPI",
   "icons": [
     {
-      "src": "./assets/img/favicon.png",
+      "src": "/appicon.png",
       "sizes": "100x100",
       "type": "image/png"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#00bffe",
+  "background_color": "#00bffe"
 }

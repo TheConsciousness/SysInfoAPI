@@ -28,13 +28,13 @@ http.createServer(async (req,res)=> {
             })
             break;
         case "/memory":
-            res.end(JSON.stringify(currentPC.getMemory(), null, 2));
+            res.end(JSON.stringify(currentPC.getMemory(true), null, 2));
             break;
         case "/cpu":
-            res.end(JSON.stringify(await currentPC.getCPU(), null, 2));
+            res.end(JSON.stringify(await currentPC.getCPU(true), null, 2));
             break;
         case "/hdd":
-            res.end(JSON.stringify(await currentPC.getHDDs(), null, 2));
+            res.end(JSON.stringify(await currentPC.getHDDs(true), null, 2));
             break;
         case "/all":
             res.end(JSON.stringify(await currentPC.getAll(), null, 2));

@@ -1,6 +1,5 @@
 const os = require('os');
 const nodeDiskInfo = require('node-disk-info');
-const { memoryUsage } = require('process');
 
 const formatBytes = (bytes, decimals = 2) => {
     if (bytes === 0) return '0 Bytes';
@@ -19,10 +18,14 @@ class PC {
     Memory = {};
     CPU = {};
 
-    constructor(name) {
+    cpuData = {};
+    hddData = {};
+    memData = {};
+
+    constructor() {
         this.Hostname = os.hostname();
     }
-    async getCPU() {
+    async getCPU(withPCName=false) {
         this.CPU = {};
         try {
             //throw new Error('Couldnt retrieve CPU stats.');
@@ -35,7 +38,8 @@ class PC {
             this.CPU.Used = Math.round((parseFloat(this.CPU.User) + parseFloat(this.CPU.System))) + "%";
             this.CPU.Free = splittin[2].replace(" idle \n", "").trim();
 
-            return this.CPU;
+            if (withPCName) return {[this.Hostname]:{CPU:this.CPU}}
+            return {CPU:this.CPU};
         }
         catch (err) {
             console.log(`PC.freshCPU(): ${err}`);
@@ -43,13 +47,12 @@ class PC {
             return this.CPU;
         }
     }
-    async getHDDs() {
+    async getHDDs(withPCName=false) {
         this.HDDs = {};
         try {
             const disks = await nodeDiskInfo.getDiskInfo();
             this.HDDs = 
-                {
-                HDDs: disks.map(disk => {
+                disks.map(disk => {
                     return {
                         ...disk,
                         _available: formatBytes(disk._available),
@@ -57,55 +60,57 @@ class PC {
                         _used: formatBytes(disk._used)
                     }
                 })
-            }
-            return this.HDDs;
+            
+            if (withPCName) return {[this.Hostname]:{HDDs:this.HDDs}}
+            
+            return {HDDs:this.HDDs};
         } catch (err) {
             console.log(`PC.freshHDDs(): ${err}`);
-            this.HDDs = err.message;
-            return this.HDDs;
+            return {HDDs:err.message};
         }
     }
-    getMemory() {
+    getMemory(withPCName=false) {
         try {
             this.Memory = {};
             this.Memory.Free = formatBytes(os.freemem());
             this.Memory.Total = formatBytes(os.totalmem());
             this.Memory.PercentUsed = Math.round((os.freemem()/os.totalmem())*100) + "%";
-            return this.Memory;
+            if (withPCName) return {[this.Hostname]:{Memory:this.Memory}};
+            return {Memory:this.Memory};
         } catch (err) {
             console.log(`PC.freshMemory(): ${err}`);
-            this.Memory = err.message;
-            return this.Memory;
+            return {Memory:err.message};
         }
     }
     async getAll() {
+
         try {
             //throw new Error("CPU");
-            this.CPU = {CPU: await this.getCPU()};
+            this.cpuData = await this.getCPU();
         } catch (cpuerr) {
-            this.CPU = {CPU: cpuerr.message};
+            this.cpuData = {CPU: cpuerr.message};
         }
         try {
             //throw new Error("HDD");
-            this.HDDs = {HDDs: await nodeDiskInfo.getDiskInfo()};
+            this.hddData = await this.getHDDs();
         } catch (hdderr) {
-            this.HDDs = {HDDs: hdderr.message};
+            this.hddData = {HDDs: hdderr.message};
         }
 
         try {
-            this.Memory = {Memory: this.getMemory()};
+            this.memData = this.getMemory();
             //throw new Error("Memory");
         } catch (memerr) {
-            this.Memory = {Memory: memerr.message};
+            this.memData = {Memory: memerr.message};
         }
 
         try {
             //throw new Error("All error!");
             this.allObject = {
                 [os.hostname()]:{
-                    ...this.CPU,
-                    ...this.Memory,
-                    ...this.HDDs
+                    ...this.cpuData,
+                    ...this.memData,
+                    ...this.hddData
                 //  }).slice(0,-1) // Use this is the last value is garbage
             }}
         } catch (error) {

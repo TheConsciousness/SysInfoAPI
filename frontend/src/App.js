@@ -12,7 +12,6 @@ const loading = (
 const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'))
 
 // Pages
-const Register = React.lazy(() => import('./views/pages/register/Register'))
 
 class App extends Component {
   render() {
@@ -20,7 +19,6 @@ class App extends Component {
       <HashRouter>
         <Suspense fallback={loading}>
           <Routes>
-            <Route exact path="/register" name="Register Page" element={<Register />} />
             <Route path="*" name="Home" element={<DefaultLayout />} />
           </Routes>
         </Suspense>

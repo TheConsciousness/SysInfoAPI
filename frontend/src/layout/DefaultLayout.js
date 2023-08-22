@@ -1,11 +1,7 @@
 import React from 'react'
 import {
-  CAvatar,
-  CButton,
-  CButtonGroup,
   CCard,
   CCardBody,
-  CCardFooter,
   CCardHeader,
   CCol,
   CProgress,
@@ -121,7 +117,7 @@ const DefaultLayout = () => {
                             <span className="ms-auto fw-semibold">{apiReturn['Big-Mac.local'].CPU.Used.replace(/%/g, '')}%</span>
                           </div>
                           <div className="progress-group-bars">
-                            <CProgress thin color="warning" value={apiReturn['Big-Mac.local'].CPU.Used.replace(/%/g, '')} />
+                            <CProgress thin color="warning" value={parseInt(apiReturn['Big-Mac.local'].CPU.Used.replace(/%/g, ''))} />
                           </div>
                         </div>
 
@@ -138,7 +134,7 @@ const DefaultLayout = () => {
                             </span>
                           </div>
                           <div className="progress-group-bars">
-                            <CProgress thin color="success" value={apiReturn['Big-Mac.local'].Memory.PercentUsed.replace(/%/g, '')} />
+                            <CProgress thin color="success" value={parseInt(apiReturn['Big-Mac.local'].Memory.PercentUsed.replace(/%/g, ''))} />
                           </div>
                         </div>
                       </CCol>
