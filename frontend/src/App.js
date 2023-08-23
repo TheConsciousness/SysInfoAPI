@@ -14,6 +14,10 @@ const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'))
 // Pages
 
 class App extends Component {
+  constructor (props) {
+    super(props);
+  }
+
   render() {
     return (
       <HashRouter>

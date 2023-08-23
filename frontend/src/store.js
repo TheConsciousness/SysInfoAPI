@@ -2,18 +2,46 @@ import { createStore } from 'redux'
 
 const initialState = {
   sidebarShow: false,
-  pcStats: {}
+  pcStats: {
+    "Big-Mac.local": {
+      "CPU": {
+        "User": "0%",
+        "System": "0%",
+        "Used": "0%",
+        "Free": "0%"
+      },
+      "Memory": {
+        "Free": "0 GB",
+        "Total": "0 GB",
+        "PercentUsed": "0%"
+      },
+      "HDDs": [
+        {
+          "_filesystem": "Example",
+          "_blocks": 0,
+          "_used": 0,
+          "_available": 0,
+          "_capacity": "0%",
+          "_mounted": "/mnt/example"
+        },
+        {
+          "_filesystem": "Example2",
+          "_blocks": 0,
+          "_used": 0,
+          "_available": 0,
+          "_capacity": "0%",
+          "_mounted": "/mnt/example2"
+        }
+      ]
+    }
+  }  
+  
 }
 
 const changeState = (state = initialState, { type, ...rest }) => {
   switch (type) {
     case 'set':
       return { ...state, ...rest }
-    case 'STORE_OBJECT':
-      return {
-        ...state,
-        pcStats: [state.pcStats, rest]
-      };
     case 'GET_STORED_OBJECTS':
       return state.pcStats;
     default:
