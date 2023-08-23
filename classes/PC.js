@@ -29,7 +29,7 @@ class PC {
         this.CPU = {};
         try {
             //throw new Error('Couldnt retrieve CPU stats.');
-            const { stdout } = await require('util').promisify(require('child_process').exec)('top -l 1 | grep -E "^CPU"');
+            const { stdout } = await require('util').promisify(require('child_process').exec)('sudo top -l 1 | grep -E "^CPU"');
             let splittin = stdout.split(':');
             splittin = splittin[1].split(",");
 
@@ -42,7 +42,7 @@ class PC {
             return {CPU:this.CPU};
         }
         catch (err) {
-            console.log(`PC.freshCPU(): ${err}`);
+            console.error(`PC.freshCPU(): ${err}`);
             this.CPU = err.message;
             return this.CPU;
         }
@@ -59,13 +59,13 @@ class PC {
                         _blocks: formatBytes(disk._blocks),
                         _used: formatBytes(disk._used)
                     }
-                })
+                }).slice(0,-1);
             
             if (withPCName) return {[this.Hostname]:{HDDs:this.HDDs}}
             
             return {HDDs:this.HDDs};
         } catch (err) {
-            console.log(`PC.freshHDDs(): ${err}`);
+            console.error(`PC.freshHDDs(): ${err}`);
             return {HDDs:err.message};
         }
     }
@@ -78,7 +78,7 @@ class PC {
             if (withPCName) return {[this.Hostname]:{Memory:this.Memory}};
             return {Memory:this.Memory};
         } catch (err) {
-            console.log(`PC.freshMemory(): ${err}`);
+            console.error(`PC.freshMemory(): ${err}`);
             return {Memory:err.message};
         }
     }

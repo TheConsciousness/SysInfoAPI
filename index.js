@@ -11,6 +11,7 @@ http.createServer(async (req,res)=> {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Content-Type', 'application/json');
     res.statusCode = 200;
+    let faviconPath = require('path').join(__dirname, 'favicon.ico');
 
     switch (req.url) {
         case "/":
@@ -19,7 +20,6 @@ http.createServer(async (req,res)=> {
             break;
         case "/favicon.ico":
             res.setHeader('Content-Type', 'image/x-icon');
-            const faviconPath = require('path').join(__dirname, 'favicon.ico');
 
             fs.readFile(faviconPath, (err, data) => {
                 if (err) {
