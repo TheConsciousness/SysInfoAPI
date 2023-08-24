@@ -1,9 +1,15 @@
 import React, { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux';
 
-const setState = (newStats) => ({
+/*
+const setState = (payload) => ({
   type: 'set',
-  pcStats: newStats
+  pcStats: payload
+});
+*/
+const setState2 = (payload) => ({
+  type: 'set',
+  ...payload
 });
 
 import {
@@ -20,7 +26,8 @@ import {
   CTableHeaderCell,
   CTableRow,
   CPopover,
-  CProgressStacked
+  CProgressStacked,
+  CAlert
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
@@ -33,50 +40,27 @@ import {
 
 const DefaultLayout = () => {
 
-  // eslint-disable-next-line
   const dispatch = useDispatch();
   var pcStatsObj = useSelector((state) => state.pcStats);
+  var alertHiddenObj = useSelector((state) => state.alert_hidden);
+  var alertMsgObj = useSelector((state) => state.alert_message);
 
   useEffect(() => {
     updatePCStats();
     setInterval(() => {
-
-      /*
-      var pcStatsObj2 = {...pcStatsObj};
-
-      pcStatsObj2['Big-Mac.local'].HDDs.map(disk => {
-          disk._capacity = (Math.floor(Math.random() * (100 - 1 + 1)) + 1) + "%"
-      });
-      
-      pcStatsObj2['Big-Mac.local'] = {};
-      pcStatsObj2['Big-Mac.local'].CPU = {};
-      pcStatsObj2['Big-Mac.local'].Memory = {};
-
-      pcStatsObj2['Big-Mac.local'].CPU.Used = (Math.floor(Math.random() * (100 - 1 + 1)) + 1) + "%";
-
-      pcStatsObj2['Big-Mac.local'].Memory.Free = (Math.floor(Math.random() * (50 - 1 + 1)) + 1) +" GB";
-      pcStatsObj2['Big-Mac.local'].Memory.Total = (Math.floor(Math.random() * (100 - 50 + 1)) + 50)+" GB";
-      console.log('Mem.total', pcStatsObj2['Big-Mac.local'].Memory.Total);
-      console.log('Mem.free', pcStatsObj2['Big-Mac.local'].Memory.Free);
-      console.log('Mem.math', Math.round((pcStatsObj2['Big-Mac.local'].Memory.Free / pcStatsObj2['Big-Mac.local'].Memory.Total)*100));
-
-      console.log();
-      pcStatsObj2['Big-Mac.local'].Memory.PercentUsed = Math.round((pcStatsObj2['Big-Mac.local'].Memory.Free.replace(/GB/g, '') / pcStatsObj2['Big-Mac.local'].Memory.Total.replace(/GB/g, ''))*100)+"%";
-      pcStatsObj2['Big-Mac.local'].HDDs = pcStatsObj['Big-Mac.local'].HDDs;
-      console.log("setting cpu.used to: " + pcStatsObj2['Big-Mac.local'].CPU.Used);
-      dispatch(setState(pcStatsObj2));
-      */
-
       updatePCStats();
-
     }, 5000);
   }, []);
 
-  // eslint-disable-next-line
-  const startRotate = () => {
+  const manualRefresh = () => {
+
     if (process.env.REACT_APP_DEBUG_MODE)
       console.log("Manual Refresh");
     document.getElementById('refreshIcon').classList.add('rotate360');
+  }
+  const showAlert = (errMsg) => {
+    dispatch(setState2({alert_message: errMsg}));
+    dispatch(setState2({alert_hidden: false}));
   }
 
   const updatePCStats = async () => {
@@ -85,13 +69,19 @@ const DefaultLayout = () => {
 
     fetch(process.env.REACT_APP_API_URL || 'http://localhost:1337/all')
       .then(response => response.json())
-      .then((pcStatsObj) => {
-        dispatch(setState(pcStatsObj));
+      .then((apiResponse) => {
+        //dispatch(setState(apiResponse));
+
+        dispatch(setState2({pcStats:apiResponse}));
         document.getElementById('refreshIcon').classList.remove('rotate360');
-        console.log("Fetched:", pcStatsObj);
+
+      if (process.env.REACT_APP_DEBUG_MODE) 
+        console.log("Fetched:", apiResponse);
+
       })
-      .catch(error => {
-        console.error('Error fetching data:', error);
+      .catch(err => {
+        console.error('Error fetching data:', err);
+        showAlert(err.message);
       });
   }
 
@@ -100,13 +90,16 @@ const DefaultLayout = () => {
     <div>
       <div className="wrapper d-flex flex-column min-vh-100 bg-light">
         <div className="body flex-grow-1 px-3 mt-4">
+          <CAlert color="danger" id='alert_section' hidden={alertHiddenObj}>
+          {alertMsgObj}
+          </CAlert>
           <CRow>
             <CCol xs>
               <CCard className="mb-4">
                 <CCardHeader>{Object.keys(pcStatsObj)[0]}
                   <div className='float-right'>
                     <CPopover content="Refresh Data" placement="bottom" trigger={['hover', 'focus']}>
-                      <CIcon icon={cilReload} id='refreshIcon' onClick={startRotate} />
+                      <CIcon icon={cilReload} id='refreshIcon' onClick={manualRefresh} />
                     </CPopover>
                   </div></CCardHeader>
                 <CCardBody>
@@ -208,9 +201,8 @@ const DefaultLayout = () => {
                         </CTableRow>
                       ))}
                     </CTableBody>
-
-
                   </CTable>
+                  
                 </CCardBody>
               </CCard>
             </CCol>

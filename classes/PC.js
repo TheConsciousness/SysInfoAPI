@@ -29,7 +29,7 @@ class PC {
         this.CPU = {};
         try {
             //throw new Error('Couldnt retrieve CPU stats.');
-            const { stdout } = await require('util').promisify(require('child_process').exec)('sudo top -l 1 | grep -E "^CPU"');
+            const { stdout } = await require('util').promisify(require('child_process').exec)('top -l 1 | grep -E "^CPU"');
             let splittin = stdout.split(':');
             splittin = splittin[1].split(",");
 

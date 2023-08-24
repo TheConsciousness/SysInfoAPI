@@ -1,6 +1,8 @@
 import { createStore } from 'redux'
 
 const initialState = {
+  alert_hidden: true,
+  alert_message: "",
   sidebarShow: false,
   pcStats: {
     "Big-Mac.local": {
