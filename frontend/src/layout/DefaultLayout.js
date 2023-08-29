@@ -131,7 +131,7 @@ const DefaultLayout = () => {
       <div className="wrapper d-flex flex-column min-vh-100 bg-light">
         <div className="body flex-grow-1 px-3 mt-4">
           
-          <CModal alignment="center" id="settingsModal" visible={modalVisible}>
+          <CModal alignment="center" id="settingsModal" visible={modalVisible} onClose={hideSettings}>
             <CModalHeader>
               <CModalTitle>Settings</CModalTitle>
             </CModalHeader>
