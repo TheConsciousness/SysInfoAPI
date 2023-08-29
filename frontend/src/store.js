@@ -3,9 +3,11 @@ import { createStore } from 'redux'
 const initialState = {
   alert_hidden: true,
   alert_message: "",
+  modal_visible: false,
+  api_endpoint: "",
   sidebarShow: false,
   pcStats: {
-    "Big-Mac.local": {
+    "PC_Name": {
       "CPU": {
         "User": "0%",
         "System": "0%",
