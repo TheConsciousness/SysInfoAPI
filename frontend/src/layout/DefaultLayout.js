@@ -174,32 +174,32 @@ const DefaultLayout = () => {
                         <div className="progress-group-header">
                           <CIcon className="me-2" icon={cilMonitor} size="lg" />
                           <span>System</span>
-                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.System.replace(/%/g, '')}%</span>
+                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.System?pcStatsObj[pcStatKey].CPU.System:0}</span>
                         </div>
                         <div className="progress-group-bars">
-                          <CProgress color="success" value={parseInt(pcStatsObj[pcStatKey].CPU.System.replace(/%/g, ''))} />
+                          <CProgress color="success" value={parseInt(pcStatsObj[pcStatKey].CPU.System?pcStatsObj[pcStatKey].CPU.System:0)} />
                         </div>
                       </div>
                       <div className="progress-group mb-4">
                         <div className="progress-group-header">
                           <CIcon className="me-2" icon={cilUser} size="lg" />
                           <span>User</span>
-                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.User.replace(/%/g, '')}%</span>
+                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.User?pcStatsObj[pcStatKey].CPU.User:0}</span>
                         </div>
                         <div className="progress-group-bars">
-                          <CProgress color="info" value={parseInt(pcStatsObj[pcStatKey].CPU.User.replace(/%/g, ''))} />
+                          <CProgress color="info" value={parseInt(pcStatsObj[pcStatKey].CPU.User?pcStatsObj[pcStatKey].CPU.User:0)} />
                         </div>
                       </div>
                       <div className="progress-group mb-4">
                         <div className="progress-group-header">
                           <CIcon className="me-2" icon={cilListRich} size="lg" />
                           <span>Used</span>
-                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.Used.replace(/%/g, '')}%</span>
+                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.Used?pcStatsObj[pcStatKey].CPU.Used:0}</span>
                         </div>
                         <div className="progress-group-bars">
                           <CProgressStacked>
-                            <CProgress color="success" value={parseInt(pcStatsObj[pcStatKey].CPU.System.replace(/%/g, ''))} />
-                            <CProgress color="info" value={parseInt(pcStatsObj[pcStatKey].CPU.User.replace(/%/g, ''))} />
+                            <CProgress color="success" value={parseInt(pcStatsObj[pcStatKey].CPU.System?pcStatsObj[pcStatKey].CPU.System:0)} />
+                            <CProgress color="info" value={parseInt(pcStatsObj[pcStatKey].CPU.User?pcStatsObj[pcStatKey].CPU.User:0)} />
                           </CProgressStacked>
                         </div>
                       </div>

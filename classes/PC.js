@@ -25,28 +25,64 @@ class PC {
     constructor() {
         this.Hostname = os.hostname();
     }
+
     async getCPU(withPCName=false) {
         this.CPU = {};
-        try {
-            //throw new Error('Couldnt retrieve CPU stats.');
-            const { stdout } = await require('util').promisify(require('child_process').exec)('top -l 1 | grep -E "^CPU"');
-            let splittin = stdout.split(':');
-            splittin = splittin[1].split(",");
 
-            this.CPU.User = splittin[0].replace(" user", "").trim();
-            this.CPU.System = splittin[1].replace(" sys", "").trim();
-            this.CPU.Used = Math.round((parseFloat(this.CPU.User) + parseFloat(this.CPU.System))) + "%";
-            this.CPU.Free = splittin[2].replace(" idle \n", "").trim();
+        
+        if (process.platform === 'darwin') {
+            console.log('Environment is macOS (Mac)');
+
+            try {
+                //throw new Error('Couldnt retrieve CPU stats.');
+                const { stdout } = await require('util').promisify(require('child_process').exec)('top -l 1 | grep -E "^CPU"');
+                let splittin = stdout.split(':');
+                splittin = splittin[1].split(",");
+    
+                this.CPU.User = splittin[0].replace(" user", "").trim();
+                this.CPU.System = splittin[1].replace(" sys", "").trim();
+                this.CPU.Used = Math.round((parseFloat(this.CPU.User) + parseFloat(this.CPU.System))) + "%";
+                this.CPU.Free = splittin[2].replace(" idle \n", "").trim();
+    
+                if (withPCName) return {[this.Hostname]:{CPU:this.CPU}}
+                return {CPU:this.CPU};
+            }
+            catch (err) {
+                console.error(`PC.freshCPU(): ${err}`);
+                this.CPU = err.message;
+                return {CPU:this.CPU};
+            }
+        } else if (process.platform === 'linux') {
+            console.log("Linux!");
+
+            const { stdout } = await require('util').promisify(require('child_process').exec)('top -n 1');
+
+            // Regular expression pattern to match %Cpu(s) line
+            const cpuUsagePattern = /%Cpu\(s\):\s+([\d.]+)\s+us,\s+([\d.]+)\s+sy/;
+
+            // Find the CPU usage percentages using the regular expression
+            const cpuUsageMatches = stdout.match(cpuUsagePattern);
+
+            if (cpuUsageMatches) {
+                this.CPU.User = parseFloat(cpuUsageMatches[1]) + "%";
+                this.CPU.System = parseFloat(cpuUsageMatches[2]) + "%";
+                this.CPU.Used = Math.round((parseFloat(this.CPU.User) + parseFloat(this.CPU.System))) + "%";
+            } else {
+                console.log("Couldn't find CPU usage information.");
+                this.CPU.User = 0 + "%";
+                this.CPU.System = 0 + "%";
+                this.CPU.Used = 0 + "%";
+            }
 
             if (withPCName) return {[this.Hostname]:{CPU:this.CPU}}
             return {CPU:this.CPU};
+
+        } else {
+            console.log('Environment is neither macOS nor Linux');
         }
-        catch (err) {
-            console.error(`PC.freshCPU(): ${err}`);
-            this.CPU = err.message;
-            return this.CPU;
-        }
+
     }
+    
     async getHDDs(withPCName=false) {
         this.HDDs = {};
         try {
