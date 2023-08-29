@@ -118,7 +118,7 @@ const DefaultLayout = () => {
           console.log("Max retries hit, stopping refresh.");
           clearInterval(refreshInterval);
         }
-        console.log(retryCount, "out of", retryMaxCount, "retries before stopping.");
+        console.log(`${retryCount} out of  ${retryMaxCount} retries before stopping.`);
         retryCount++;
 
         showAlert(err.message);
