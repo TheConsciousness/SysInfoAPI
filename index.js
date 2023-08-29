@@ -6,8 +6,11 @@ const PC = require("./classes/PC");
 http.createServer(async (req,res)=> {
     const currentPC = new PC();
 
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Content-Type', 'application/json');
     res.statusCode = 200;
+    let faviconPath = require('path').join(__dirname, 'favicon.ico');
 
     switch (req.url) {
         case "/":
@@ -16,7 +19,6 @@ http.createServer(async (req,res)=> {
             break;
         case "/favicon.ico":
             res.setHeader('Content-Type', 'image/x-icon');
-            const faviconPath = require('path').join(__dirname, 'favicon.ico');
 
             fs.readFile(faviconPath, (err, data) => {
                 if (err) {
@@ -28,13 +30,13 @@ http.createServer(async (req,res)=> {
             })
             break;
         case "/memory":
-            res.end(JSON.stringify(currentPC.getMemory(), null, 2));
+            res.end(JSON.stringify(currentPC.getMemory(true), null, 2));
             break;
         case "/cpu":
-            res.end(JSON.stringify(await currentPC.getCPU(), null, 2));
+            res.end(JSON.stringify(await currentPC.getCPU(true), null, 2));
             break;
         case "/hdd":
-            res.end(JSON.stringify(await currentPC.getHDDs(), null, 2));
+            res.end(JSON.stringify(await currentPC.getHDDs(true), null, 2));
             break;
         case "/all":
             res.end(JSON.stringify(await currentPC.getAll(), null, 2));

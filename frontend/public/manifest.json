@@ -1,0 +1,15 @@
+{
+  "short_name": "SysInfoAPI",
+  "name": "SysInfoAPI",
+  "icons": [
+    {
+      "src": "/appicon.png",
+      "sizes": "100x100",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#00bffe",
+  "background_color": "#00bffe"
+}
