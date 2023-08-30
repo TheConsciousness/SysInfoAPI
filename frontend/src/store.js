@@ -5,6 +5,7 @@ const initialState = {
   alert_message: "",
   modal_visible: false,
   api_endpoint: "",
+  is_spinning: false,
   sidebarShow: false,
   pcStats: {
     "PC_Name": {

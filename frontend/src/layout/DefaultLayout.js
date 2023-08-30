@@ -46,31 +46,42 @@ import {
 
 const DefaultLayout = () => {
 
+  // Redux dispatch
   const dispatch = useDispatch();
-  var pcStatsObj = useSelector((state) => state.pcStats);
-  var alertHiddenObj = useSelector((state) => state.alert_hidden);
-  var alertMsgObj = useSelector((state) => state.alert_message);
-  var modalVisible = useSelector((state) => state.modal_visible);
+
+  // Retrieving state with redux
+  const pcStatsObj = useSelector((state) => state.pcStats);
+  const alertHidden = useSelector((state) => state.alert_hidden);
+  const alertMsgObj = useSelector((state) => state.alert_message);
+  const modalVisible = useSelector((state) => state.modal_visible);
+  const isSpinning = useSelector((state) => state.is_spinning);
+
   var pcStatKey = Object.keys(pcStatsObj)[0];
   const retryMaxCount = 2;
   var retryCount = 0;
   var refreshInterval;
-  var updatePCEndpoint;
 
   // I think this is the best route for updating the API IP on the fly, as it will always be hosted locally.
   const localApiEndpoint = "http://"+window.location.hostname+":1337/all";
 
   useEffect(() => {
-    updatePCStats();
-
-    refreshInterval = setInterval(() => {
-      updatePCStats();
-    }, 5000);
+    prepIntervalAndRefresh();
+    return () => clearInterval(refreshInterval); // Cleanup
   }, []);
 
+  const prepIntervalAndRefresh = () => {
+    updatePCStats();
+
+    if (refreshInterval == null) {
+      refreshInterval = setInterval(() => {
+        updatePCStats();
+      }, 5000);
+    }
+  }
   const saveSettings = () => {
-    dispatch(setState({api_endpoint: document.getElementById('textBoxApiEndpoint').value}));
-    window.sessionStorage.setItem('apiEndPoint', document.getElementById('textBoxApiEndpoint').value);
+    const newApiEndpoint = document.getElementById('textBoxApiEndpoint').value;
+    dispatch(setState({ api_endpoint: newApiEndpoint }));
+    window.sessionStorage.setItem('apiEndPoint', newApiEndpoint);
     dispatch(setState({modal_visible: false}));
   }
 
@@ -78,11 +89,16 @@ const DefaultLayout = () => {
 
     if (process.env.REACT_APP_DEBUG_MODE)
       console.log("Manual Refresh");
-    document.getElementById('refreshIcon').classList.add('rotate360');
+    dispatch(setState({is_spinning: true}));
+    
+    prepIntervalAndRefresh();
   }
   const showAlert = (errMsg) => {
     dispatch(setState({alert_message: errMsg}));
     dispatch(setState({alert_hidden: false}));
+  }
+  const hideAlert = () => {
+    dispatch(setState({alert_hidden: true}));
   }
   const showSettings = () => {
     dispatch(setState({modal_visible: true}));
@@ -92,37 +108,37 @@ const DefaultLayout = () => {
   }
 
   const updatePCStats = async () => {
-    updatePCEndpoint = window.sessionStorage.getItem("apiEndPoint") || localApiEndpoint;
+    const updatePCEndpoint = window.sessionStorage.getItem("apiEndPoint") || localApiEndpoint;
 
     if (process.env.REACT_APP_DEBUG_MODE)
       console.log("Fetching:", updatePCEndpoint);
 
-    //fetch(process.env.REACT_APP_API_URL || 'http://localhost:1337/all')
-    fetch(updatePCEndpoint)
-      .then(response => response.json())
-      .then((apiResponse) => {
-
-        dispatch(setState({pcStats:apiResponse}));
-        document.getElementById('refreshIcon').classList.remove('rotate360');
-        dispatch(setState({alert_hidden: true}));
-        retryCount = 0;
+    try {
+      const response = await fetch(updatePCEndpoint);
+      const apiResponse = await response.json();
 
       if (process.env.REACT_APP_DEBUG_MODE) 
         console.log("Fetched:", apiResponse);
-
-      })
-      .catch(err => {
-        console.error('Error fetching data:', err);
         
-        if(retryCount >= retryMaxCount) {
-          console.log("Max retries hit, stopping refresh.");
-          clearInterval(refreshInterval);
-        }
-        console.log(retryCount, "out of", retryMaxCount, "retries before stopping.");
-        retryCount++;
+      dispatch(setState({ pcStats: apiResponse }));
+      dispatch(setState({is_spinning: false}));
+      dispatch(setState({alert_hidden: true}));
+      retryCount = 0;
 
-        showAlert(err.message);
-      });
+    } catch (err) {
+      console.error('Error fetching data:', err.message);
+        
+      if(retryCount >= retryMaxCount) {
+        console.log("Max retries hit, stopping refresh.");
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+        dispatch(setState({is_spinning: false}));
+      }
+      console.log(`${retryCount} out of ${retryMaxCount} retries before stopping.`);
+      retryCount++;
+
+      showAlert(err.message);
+    }
   }
 
   return (
@@ -131,7 +147,7 @@ const DefaultLayout = () => {
       <div className="wrapper d-flex flex-column min-vh-100 bg-light">
         <div className="body flex-grow-1 px-3 mt-4">
           
-          <CModal alignment="center" id="settingsModal" visible={modalVisible}>
+          <CModal alignment="center" id="settingsModal" visible={modalVisible} onClose={hideSettings}>
             <CModalHeader>
               <CModalTitle>Settings</CModalTitle>
             </CModalHeader>
@@ -149,7 +165,7 @@ const DefaultLayout = () => {
             </CModalFooter>
           </CModal>
           
-          <CAlert color="danger" id='alert_section' hidden={alertHiddenObj}>
+          <CAlert dismissible color="danger" id='alert_section' visible={!alertHidden} onClose={hideAlert}>
           {alertMsgObj}
           </CAlert>
           <CRow>
@@ -161,7 +177,7 @@ const DefaultLayout = () => {
                       <CIcon icon={cilCog} id='settingsIcon' className='mr-10' onClick={showSettings} />
                     </CTooltip>
                     <CTooltip content="Refresh">
-                      <CIcon icon={cilReload} id='refreshIcon' onClick={manualRefresh} />
+                      <CIcon icon={cilReload} id='refreshIcon' onClick={manualRefresh} className={isSpinning ? 'rotate360' : ''}/>
                     </CTooltip>
                   </div></CCardHeader>
                 <CCardBody>
@@ -174,32 +190,32 @@ const DefaultLayout = () => {
                         <div className="progress-group-header">
                           <CIcon className="me-2" icon={cilMonitor} size="lg" />
                           <span>System</span>
-                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.System.replace(/%/g, '')}%</span>
+                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.System ? pcStatsObj[pcStatKey].CPU.System : 0}</span>
                         </div>
                         <div className="progress-group-bars">
-                          <CProgress color="success" value={parseInt(pcStatsObj[pcStatKey].CPU.System.replace(/%/g, ''))} />
+                          <CProgress color="success" value={parseInt(pcStatsObj[pcStatKey].CPU.System ? pcStatsObj[pcStatKey].CPU.System : 0)} />
                         </div>
                       </div>
                       <div className="progress-group mb-4">
                         <div className="progress-group-header">
                           <CIcon className="me-2" icon={cilUser} size="lg" />
                           <span>User</span>
-                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.User.replace(/%/g, '')}%</span>
+                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.User ? pcStatsObj[pcStatKey].CPU.User : 0}</span>
                         </div>
                         <div className="progress-group-bars">
-                          <CProgress color="info" value={parseInt(pcStatsObj[pcStatKey].CPU.User.replace(/%/g, ''))} />
+                          <CProgress color="info" value={parseInt(pcStatsObj[pcStatKey].CPU.User ? pcStatsObj[pcStatKey].CPU.User : 0)} />
                         </div>
                       </div>
                       <div className="progress-group mb-4">
                         <div className="progress-group-header">
                           <CIcon className="me-2" icon={cilListRich} size="lg" />
                           <span>Used</span>
-                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.Used.replace(/%/g, '')}%</span>
+                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.Used ? pcStatsObj[pcStatKey].CPU.Used : 0}</span>
                         </div>
                         <div className="progress-group-bars">
                           <CProgressStacked>
-                            <CProgress color="success" value={parseInt(pcStatsObj[pcStatKey].CPU.System.replace(/%/g, ''))} />
-                            <CProgress color="info" value={parseInt(pcStatsObj[pcStatKey].CPU.User.replace(/%/g, ''))} />
+                            <CProgress color="success" value={parseInt(pcStatsObj[pcStatKey].CPU.System ? pcStatsObj[pcStatKey].CPU.System : 0)} />
+                            <CProgress color="info" value={parseInt(pcStatsObj[pcStatKey].CPU.User ? pcStatsObj[pcStatKey].CPU.User : 0)} />
                           </CProgressStacked>
                         </div>
                       </div>
