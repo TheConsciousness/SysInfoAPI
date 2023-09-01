@@ -1,0 +1,17 @@
+version: '3'
+services:
+  node-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "1337:1337"  # Map the Node.js server port to a host port
+    volumes:
+      - .:/app      # Mount the current directory into the container
+
+  react-frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.frontend
+    ports:
+      - "8080:8080"  # Map the serve port to a host port
