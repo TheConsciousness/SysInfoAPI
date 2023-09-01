@@ -32,7 +32,11 @@ import {
   CModalFooter,
   CFormLabel,
   CInputGroup,
-  CFormInput
+  CFormInput,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
@@ -41,7 +45,9 @@ import {
   cilReload,
   cilUser,
   cilListRich,
-  cilCog
+  cilCog,
+  cilPlus,
+  cilMinus
 } from '@coreui/icons'
 
 const DefaultLayout = () => {
@@ -55,42 +61,59 @@ const DefaultLayout = () => {
   const alertMsgObj = useSelector((state) => state.alert_message);
   const modalVisible = useSelector((state) => state.modal_visible);
   const isSpinning = useSelector((state) => state.is_spinning);
+  const savedEndpoints = useSelector((state) => state.saved_endpoints);
 
-  var pcStatKey = Object.keys(pcStatsObj)[0];
-  const retryMaxCount = 2;
-  var retryCount = 0;
-  var refreshInterval;
+  var pcStatKey = Object.keys(pcStatsObj)[0]; // The computer name that is stored in the first key in the JSON.
+  const retryMaxCount = 2; // Max amount of retries to try fetching API after failure.
+  var retryCount = 0; // Counter for retrying failed fetches
+  var refreshInterval; // Stores the setInterval id for future clearing.
+  const refreshTimeMS = 5000; // 5sec API stat refresh
 
-  // I think this is the best route for updating the API IP on the fly, as it will always be hosted locally.
+  // I think this is the best route for updating the API IP on the fly
+  // as the node API should always be hosted on the same machine.
   const localApiEndpoint = "http://"+window.location.hostname+":1337/all";
 
-  useEffect(() => {
-    prepIntervalAndRefresh();
+  useEffect(() => {// useEffect is ran once at load
+
+    // Load any saved_endpoints from localStorage into redux state
+    const currEndpoints = window.localStorage.getItem("savedEndpoints");
+    if (savedEndpoints == "") {
+      if (process.env.REACT_APP_DEBUG_MODE) console.log("No localStorage savedEndpoints.")
+      if (currEndpoints) {
+        if (currEndpoints.length > 0) {
+          if (process.env.REACT_APP_DEBUG_MODE) console.log("Loading found localStorage savedEndpoints into redux.");
+          dispatch(setState({saved_endpoints: JSON.parse(currEndpoints)}));
+        }
+    }
+  }
+    
+    prepIntervalAndRefresh(); // Start first stat refresh and start the setInterval
     return () => clearInterval(refreshInterval); // Cleanup
   }, []);
 
   const prepIntervalAndRefresh = () => {
+    // Refresh the PC stats and setInterval if none are set.
     updatePCStats();
 
     if (refreshInterval == null) {
       refreshInterval = setInterval(() => {
         updatePCStats();
-      }, 5000);
+      }, refreshTimeMS);
     }
   }
   const saveSettings = () => {
-    const newApiEndpoint = document.getElementById('textBoxApiEndpoint').value;
-    dispatch(setState({ api_endpoint: newApiEndpoint }));
-    window.sessionStorage.setItem('apiEndPoint', newApiEndpoint);
+    const inputEndpoint = document.getElementById('textBoxApiEndpoint').value;
+    if (inputEndpoint) {
+      dispatch(setState({ api_endpoint: inputEndpoint }));
+      window.localStorage.setItem('apiEndPoint', inputEndpoint);
+    }
     dispatch(setState({modal_visible: false}));
   }
 
-  const manualRefresh = () => {
+  const manualRefresh = () => { // Mostly used to spin the refresh icon and then call refresh function.
 
-    if (process.env.REACT_APP_DEBUG_MODE)
-      console.log("Manual Refresh");
+    if (process.env.REACT_APP_DEBUG_MODE) console.log("Manual Refresh");
     dispatch(setState({is_spinning: true}));
-    
     prepIntervalAndRefresh();
   }
   const showAlert = (errMsg) => {
@@ -106,20 +129,57 @@ const DefaultLayout = () => {
   const hideSettings = () => {
     dispatch(setState({modal_visible: false}));
   }
+  // eslint-disable-next-line no-unused-vars
+  const addEndpoint = (host='') => { // Add the API endpoint from the settings textbox into redux and localStorage.
+
+    const inputEndpoint = host || document.getElementById('textBoxApiEndpoint').value;
+    let currEndpoints = JSON.parse(window.localStorage.getItem("savedEndpoints"));
+
+    console.log(`Adding host: ${JSON.stringify(inputEndpoint)}`)
+
+    if (!inputEndpoint) return; // Return if nothing in textbox
+    if (currEndpoints) {
+      if (!currEndpoints.includes(inputEndpoint)) {
+        currEndpoints.push(inputEndpoint);
+      }
+    } else {
+      currEndpoints = [inputEndpoint];
+    }
+
+    window.localStorage.setItem("savedEndpoints", JSON.stringify(currEndpoints));
+    dispatch(setState({saved_endpoints: currEndpoints}));
+  }
+  const removeEndpoint = () => {
+    const inputEndpoint = document.getElementById('textBoxApiEndpoint').value;
+    let currEndpoints = JSON.parse(window.localStorage.getItem("savedEndpoints"));
+
+    if (!inputEndpoint) return; // Return if nothing in textbox
+    if (currEndpoints) {
+      if (currEndpoints.includes(inputEndpoint)) {
+        currEndpoints = currEndpoints.filter(item => item !== inputEndpoint);
+      }
+    }
+    window.localStorage.setItem("savedEndpoints", JSON.stringify(currEndpoints));
+    dispatch(setState({saved_endpoints: currEndpoints}));
+  }
+  const clickHostDropdown = (event) => {
+    document.getElementById('textBoxApiEndpoint').value = event.target.innerText;
+  }
 
   const updatePCStats = async () => {
-    const updatePCEndpoint = window.sessionStorage.getItem("apiEndPoint") || localApiEndpoint;
+    const updatePCEndpoint = window.localStorage.getItem("apiEndPoint") || localApiEndpoint;
 
-    if (process.env.REACT_APP_DEBUG_MODE)
-      console.log("Fetching:", updatePCEndpoint);
+    
+    if (process.env.REACT_APP_DEBUG_MODE) console.log("Fetching:", updatePCEndpoint);
 
     try {
       const response = await fetch(updatePCEndpoint);
       const apiResponse = await response.json();
 
-      if (process.env.REACT_APP_DEBUG_MODE) 
-        console.log("Fetched:", apiResponse);
+      if (process.env.REACT_APP_DEBUG_MODE) console.log("Fetched:", apiResponse);
         
+      addEndpoint(updatePCEndpoint); // On successful fetch, try adding the host to the storage.
+
       dispatch(setState({ pcStats: apiResponse }));
       dispatch(setState({is_spinning: false}));
       dispatch(setState({alert_hidden: true}));
@@ -153,8 +213,21 @@ const DefaultLayout = () => {
             </CModalHeader>
             <CModalBody>
             <CFormLabel htmlFor="basic-url">Backend API URL:</CFormLabel>
-            <CInputGroup>
-              <CFormInput id="textBoxApiEndpoint" placeholder={window.sessionStorage.getItem('apiEndPoint')} aria-describedby="basic-addon3"/>
+            <CInputGroup className="mb-3">
+              <CDropdown variant="input-group">
+
+                <CDropdownToggle color="secondary" variant="outline">Hosts</CDropdownToggle>
+
+                <CDropdownMenu>
+
+                  {savedEndpoints.map((item,key) => (
+                  <CDropdownItem href="#" key={parseInt(key)} onClick={clickHostDropdown}>{item}</CDropdownItem>
+                  ))}
+                </CDropdownMenu>
+                <CButton type="button" color="success" variant="outline" onClick={addEndpoint}><CIcon icon={cilPlus}/></CButton>
+                <CButton type="button" color="danger" variant="outline" onClick={removeEndpoint}><CIcon icon={cilMinus}/></CButton>
+              </CDropdown>
+              <CFormInput id="textBoxApiEndpoint" placeholder={window.localStorage.getItem('apiEndPoint')}/>
             </CInputGroup>
             </CModalBody>
             <CModalFooter>
