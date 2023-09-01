@@ -6,6 +6,7 @@ const initialState = {
   modal_visible: false,
   api_endpoint: "",
   is_spinning: false,
+  saved_endpoints: ['http://localhost:1337/all'],
   sidebarShow: false,
   pcStats: {
     "PC_Name": {
