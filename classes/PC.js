@@ -89,45 +89,29 @@ class PC {
     async getCPU(withPCName=false) {
         this.CPU = {};
 
-        if (process.platform === 'darwin') {
-            console.log('Environment is macOS (Mac)');
-            return {CPU:{Used: await getCPULoadAVG(1000,100)+"%"}};
-
-        } else if (process.platform === 'linux') {
-            console.log("Linux!");
-
-            const { stdout } = await require('util').promisify(require('child_process').exec)('top -n 1');
-
-            // Regular expression pattern to match %Cpu(s) line
-            const cpuUsagePattern = /%Cpu\(s\):\s+([\d.]+)\s+us,\s+([\d.]+)\s+sy/;
-
-            // Find the CPU usage percentages using the regular expression
-            const cpuUsageMatches = stdout.match(cpuUsagePattern);
-
-            if (cpuUsageMatches) {
-                this.CPU.User = parseFloat(cpuUsageMatches[1]) + "%";
-                this.CPU.System = parseFloat(cpuUsageMatches[2]) + "%";
-                this.CPU.Used = Math.round((parseFloat(this.CPU.User) + parseFloat(this.CPU.System))) + "%";
+        try {
+            var cpuLoad = await getCPULoadAVG(1000,100);
+            if (withPCName) {
+                this.CPU = {[this.Hostname]:{CPU:{Used: cpuLoad+"%"}}};
             } else {
-                console.log("Couldn't find CPU usage information.");
-                this.CPU.User = 0 + "%";
-                this.CPU.System = 0 + "%";
-                this.CPU.Used = 0 + "%";
+                this.CPU = {CPU:{Used: cpuLoad+"%"}};
             }
-
-            if (withPCName) return {[this.Hostname]:{CPU:this.CPU}}
-            return {CPU:this.CPU};
-
-        } else {
-            console.log('Environment is neither macOS nor Linux');
+            //throw new Error("Failed CPU try statement!");
+        } catch (err) {
+            console.error(`PC.getCPU(): ${err.message}`);
+            if (withPCName) {
+                this.CPU = {[this.Hostname]:{CPU:{Error: err.message}}};
+            } else {
+                this.CPU = {CPU:{Error: err.message}};
+            }
         }
-
+        return this.CPU;
     }
     async getHDDs(withPCName=false) {
         this.HDDs = {};
         try {
             const disks = await nodeDiskInfo.getDiskInfo();
-            this.HDDs = 
+            const mappedDisks = 
                 disks.map(disk => {
                     return {
                         ...disk,
@@ -136,45 +120,73 @@ class PC {
                         _used: formatBytes(disk._used)
                     }
                 }).slice(0,-1);
-            
-            if (withPCName) return {[this.Hostname]:{HDDs:this.HDDs}}
-            
-            return {HDDs:this.HDDs};
+                
+            if (withPCName) {
+                this.HDDs = {[this.Hostname]:{HDDs:mappedDisks}}
+            } else {
+                this.HDDs = {HDDs:mappedDisks};
+            }
+
         } catch (err) {
-            console.error(`PC.freshHDDs(): ${err}`);
-            return {HDDs:err.message};
+            console.error(`PC.getHDDs(): ${err.message}`);
+            if (withPCName) {
+                this.HDDs = {[this.Hostname]:{HDDs:err.message}};
+            } else {
+                this.HDDs = {HDDs:err.message};
+            }
         }
+
+        //throw new Error("Failed HDD try statement!");
+        return this.HDDs;
     }
     getMemory(withPCName=false) {
+        this.memItem = {};
+
         try {
-            this.Memory = {};
-            this.Memory.Free = formatBytes(os.freemem());
-            this.Memory.Total = formatBytes(os.totalmem());
-            this.Memory.PercentUsed = Math.round((os.freemem()/os.totalmem())*100) + "%";
-            if (withPCName) return {[this.Hostname]:{Memory:this.Memory}};
-            return {Memory:this.Memory};
+            const freeMemory = os.freemem();
+            const totalMemory = os.totalmem();
+
+            if (withPCName) {
+                this.memItem[this.Hostname] = {};
+                this.memItem[this.Hostname].Memory = {};
+                this.memItem[this.Hostname].Memory.Free = formatBytes(freeMemory);
+                this.memItem[this.Hostname].Memory.Total = formatBytes(totalMemory);
+                this.memItem[this.Hostname].Memory.PercentUsed = Math.round((freeMemory/totalMemory)*100) + "%";
+            } else {
+                this.memItem.Memory = {};
+                this.memItem.Memory.Free = formatBytes(freeMemory);
+                this.memItem.Memory.Total = formatBytes(totalMemory);
+                this.memItem.Memory.PercentUsed = Math.round((freeMemory/totalMemory)*100) + "%";
+            }
+            return this.memItem;
+
         } catch (err) {
-            console.error(`PC.freshMemory(): ${err}`);
-            return {Memory:err.message};
+            console.error(`PC.getMemory(): ${err.message}`);
+            if (withPCName) {
+                this.Memory[this.Hostname] = err.message;
+            } else {
+                this.Memory = err.message;
+            }
         }
+        return this.Memory;
     }
     async getAll() {
         try {
             //throw new Error("CPU");
-            this.cpuData = await this.getCPU();
+            this.cpuData = await this.getCPU(false);
         } catch (cpuerr) {
             this.cpuData = {CPU: cpuerr.message};
         }
         try {
             //throw new Error("HDD");
-            this.hddData = await this.getHDDs();
+            this.hddData = await this.getHDDs(false);
         } catch (hdderr) {
             this.hddData = {HDDs: hdderr.message};
         }
 
         try {
-            this.memData = this.getMemory();
             //throw new Error("Memory");
+            this.memData = this.getMemory(false);
         } catch (memerr) {
             this.memData = {Memory: memerr.message};
         }
@@ -186,7 +198,7 @@ class PC {
                     ...this.cpuData,
                     ...this.memData,
                     ...this.hddData
-                //  }).slice(0,-1) // Use this is the last value is garbage
+                //  }).slice(0,-1) // Use this if the last value is garbage
             }}
         } catch (error) {
             this.allObject[os.hostname()] = error.message;

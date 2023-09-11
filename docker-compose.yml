@@ -1,8 +1,0 @@
-version: '3'
-services:
-  react-frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile.frontend
-    ports:
-      - "8080:8080"  # Map the serve port to a host port
