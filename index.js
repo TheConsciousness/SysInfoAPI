@@ -19,7 +19,6 @@ http.createServer(async (req,res)=> {
             break;
         case "/favicon.ico":
             res.setHeader('Content-Type', 'image/x-icon');
-
             fs.readFile(faviconPath, (err, data) => {
                 if (err) {
                     res.statusCode = 500;
