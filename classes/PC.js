@@ -151,7 +151,7 @@ class PC {
                 this.memItem[this.Hostname].Memory = {};
                 this.memItem[this.Hostname].Memory.Free = formatBytes(freeMemory);
                 this.memItem[this.Hostname].Memory.Total = formatBytes(totalMemory);
-                this.memItem[this.Hostname].Memory.PercentUsed = Math.round((freeMemory/totalMemory)*100) + "%";
+                this.memItem[this.Hostname].Memory.PercentUsed = Math.round(((totalMemory - freeMemory)/freeMemory)*100)+"%";
             } else {
                 this.memItem.Memory = {};
                 this.memItem.Memory.Free = formatBytes(freeMemory);
