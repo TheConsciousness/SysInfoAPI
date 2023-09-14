@@ -21,7 +21,6 @@ import {
   CTableHead,
   CTableHeaderCell,
   CTableRow,
-  CProgressStacked,
   CAlert,
   CTooltip,
   CButton,
@@ -40,14 +39,12 @@ import {
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
-  cilMonitor,
   cilStorage,
   cilReload,
-  cilUser,
-  cilListRich,
   cilCog,
   cilPlus,
-  cilMinus
+  cilMinus,
+  cilListRich
 } from '@coreui/icons'
 
 const DefaultLayout = () => {
@@ -261,6 +258,17 @@ const DefaultLayout = () => {
                       <hr className="mt-0" />
                       <div className="progress-group mb-4">
                         <div className="progress-group-header">
+                          <CIcon className="me-2" icon={cilListRich} size="lg" />
+                          <span>Used</span>
+                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU ? pcStatsObj[pcStatKey].CPU.Used : 0}</span>
+                        </div>
+                        <div className="progress-group-bars">
+                          <CProgress color="success" value={parseInt(pcStatsObj[pcStatKey].CPU ? pcStatsObj[pcStatKey].CPU.Used : 0)} />
+                        </div>
+                      </div>
+
+                      {/* <div className="progress-group mb-4">
+                        <div className="progress-group-header">
                           <CIcon className="me-2" icon={cilMonitor} size="lg" />
                           <span>System</span>
                           <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU.System ? pcStatsObj[pcStatKey].CPU.System : 0}</span>
@@ -291,9 +299,8 @@ const DefaultLayout = () => {
                             <CProgress color="info" value={parseInt(pcStatsObj[pcStatKey].CPU.User ? pcStatsObj[pcStatKey].CPU.User : 0)} />
                           </CProgressStacked>
                         </div>
-                      </div>
+                      </div> */}
 
-                      <br />
                       <h2>RAM</h2>
                       <hr className="mt-0" />
                       <div className="progress-group">

@@ -1,15 +1,19 @@
 {
   "short_name": "SysInfoAPI",
   "name": "SysInfoAPI",
+  "author": "TheConsciousness",
+  "description": "https://github.com/TheConsciousness/SysInfoAPI",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "/appicon.png",
-      "sizes": "100x100",
+      "src": "/icon.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ],
   "start_url": ".",
+  "id": "/",
   "display": "standalone",
   "theme_color": "#00bffe",
-  "background_color": "#00bffe"
+  "background_color": "#000000"
 }

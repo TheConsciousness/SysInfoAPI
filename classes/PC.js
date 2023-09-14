@@ -9,9 +9,69 @@ const formatBytes = (bytes, decimals = 2) => {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
+//Create function to get CPU information
+function cpuAverage() {
+
+    //Initialise sum of idle and time of cores and fetch CPU info
+    var totalIdle = 0, totalTick = 0;
+    var cpus = os.cpus();
+  
+    //Loop through CPU cores
+    for (var i = 0, len = cpus.length; i < len; i++) {
+  
+      //Select CPU core
+      var cpu = cpus[i];
+  
+      //Total up the time in the cores tick
+      for (var type in cpu.times) {
+        totalTick += cpu.times[type];
+      }
+  
+      //Total up the idle time of the core
+      totalIdle += cpu.times.idle;
+    }
+  
+    //Return the average Idle and Tick times
+    return {idle: totalIdle / cpus.length, total: totalTick / cpus.length};
+  }
+  
+  // function to calculate average of array
+  const arrAvg = function (arr) {
+    if (arr && arr.length >= 1) {
+      const sumArr = arr.reduce((a, b) => a + b, 0)
+      return sumArr / arr.length;
+    }
+  };
+  
+  // load average for the past 1000 milliseconds calculated every 100
+  function getCPULoadAVG(avgTime = 1000, delay = 100) {
+    return new Promise((resolve, reject) => {
+      const n = ~~(avgTime / delay);
+      if (n <= 1) {
+        reject(new Error('Interval too small!'));
+      }
+  
+      let i = 0;
+      let samples = [];
+      const avg1 = cpuAverage();
+  
+      let interval = setInterval(() => {
+        if (i >= n) {
+          clearInterval(interval);
+          resolve(~~((arrAvg(samples) * 100)));
+        }
+  
+        const avg2 = cpuAverage();
+        const totalDiff = avg2.total - avg1.total;
+        const idleDiff = avg2.idle - avg1.idle;
+  
+        samples[i] = (1 - idleDiff / totalDiff);
+        i++;
+      }, delay);
+    });
+  }
 
 class PC {
-    
     allObject = {};
     Hostname = "";
     HDDs = {};
@@ -29,65 +89,29 @@ class PC {
     async getCPU(withPCName=false) {
         this.CPU = {};
 
-        
-        if (process.platform === 'darwin') {
-            console.log('Environment is macOS (Mac)');
-
-            try {
-                //throw new Error('Couldnt retrieve CPU stats.');
-                const { stdout } = await require('util').promisify(require('child_process').exec)('top -l 1 | grep -E "^CPU"');
-                let splittin = stdout.split(':');
-                splittin = splittin[1].split(",");
-    
-                this.CPU.User = splittin[0].replace(" user", "").trim();
-                this.CPU.System = splittin[1].replace(" sys", "").trim();
-                this.CPU.Used = Math.round((parseFloat(this.CPU.User) + parseFloat(this.CPU.System))) + "%";
-                this.CPU.Free = splittin[2].replace(" idle \n", "").trim();
-    
-                if (withPCName) return {[this.Hostname]:{CPU:this.CPU}}
-                return {CPU:this.CPU};
-            }
-            catch (err) {
-                console.error(`PC.freshCPU(): ${err}`);
-                this.CPU = err.message;
-                return {CPU:this.CPU};
-            }
-        } else if (process.platform === 'linux') {
-            console.log("Linux!");
-
-            const { stdout } = await require('util').promisify(require('child_process').exec)('top -n 1');
-
-            // Regular expression pattern to match %Cpu(s) line
-            const cpuUsagePattern = /%Cpu\(s\):\s+([\d.]+)\s+us,\s+([\d.]+)\s+sy/;
-
-            // Find the CPU usage percentages using the regular expression
-            const cpuUsageMatches = stdout.match(cpuUsagePattern);
-
-            if (cpuUsageMatches) {
-                this.CPU.User = parseFloat(cpuUsageMatches[1]) + "%";
-                this.CPU.System = parseFloat(cpuUsageMatches[2]) + "%";
-                this.CPU.Used = Math.round((parseFloat(this.CPU.User) + parseFloat(this.CPU.System))) + "%";
+        try {
+            var cpuLoad = await getCPULoadAVG(1000,100);
+            if (withPCName) {
+                this.CPU = {[this.Hostname]:{CPU:{Used: cpuLoad+"%"}}};
             } else {
-                console.log("Couldn't find CPU usage information.");
-                this.CPU.User = 0 + "%";
-                this.CPU.System = 0 + "%";
-                this.CPU.Used = 0 + "%";
+                this.CPU = {CPU:{Used: cpuLoad+"%"}};
             }
-
-            if (withPCName) return {[this.Hostname]:{CPU:this.CPU}}
-            return {CPU:this.CPU};
-
-        } else {
-            console.log('Environment is neither macOS nor Linux');
+            //throw new Error("Failed CPU try statement!");
+        } catch (err) {
+            console.error(`PC.getCPU(): ${err.message}`);
+            if (withPCName) {
+                this.CPU = {[this.Hostname]:{CPU:{Error: err.message}}};
+            } else {
+                this.CPU = {CPU:{Error: err.message}};
+            }
         }
-
+        return this.CPU;
     }
-    
     async getHDDs(withPCName=false) {
         this.HDDs = {};
         try {
             const disks = await nodeDiskInfo.getDiskInfo();
-            this.HDDs = 
+            const mappedDisks = 
                 disks.map(disk => {
                     return {
                         ...disk,
@@ -96,46 +120,73 @@ class PC {
                         _used: formatBytes(disk._used)
                     }
                 }).slice(0,-1);
-            
-            if (withPCName) return {[this.Hostname]:{HDDs:this.HDDs}}
-            
-            return {HDDs:this.HDDs};
+                
+            if (withPCName) {
+                this.HDDs = {[this.Hostname]:{HDDs:mappedDisks}}
+            } else {
+                this.HDDs = {HDDs:mappedDisks};
+            }
+
         } catch (err) {
-            console.error(`PC.freshHDDs(): ${err}`);
-            return {HDDs:err.message};
+            console.error(`PC.getHDDs(): ${err.message}`);
+            if (withPCName) {
+                this.HDDs = {[this.Hostname]:{HDDs:err.message}};
+            } else {
+                this.HDDs = {HDDs:err.message};
+            }
         }
+
+        //throw new Error("Failed HDD try statement!");
+        return this.HDDs;
     }
     getMemory(withPCName=false) {
-        try {
-            this.Memory = {};
-            this.Memory.Free = formatBytes(os.freemem());
-            this.Memory.Total = formatBytes(os.totalmem());
-            this.Memory.PercentUsed = Math.round((os.freemem()/os.totalmem())*100) + "%";
-            if (withPCName) return {[this.Hostname]:{Memory:this.Memory}};
-            return {Memory:this.Memory};
-        } catch (err) {
-            console.error(`PC.freshMemory(): ${err}`);
-            return {Memory:err.message};
-        }
-    }
-    async getAll() {
+        this.memItem = {};
 
         try {
+            const freeMemory = os.freemem();
+            const totalMemory = os.totalmem();
+
+            if (withPCName) {
+                this.memItem[this.Hostname] = {};
+                this.memItem[this.Hostname].Memory = {};
+                this.memItem[this.Hostname].Memory.Free = formatBytes(freeMemory);
+                this.memItem[this.Hostname].Memory.Total = formatBytes(totalMemory);
+                this.memItem[this.Hostname].Memory.PercentUsed = Math.round(((totalMemory - freeMemory)/freeMemory)*100)+"%";
+            } else {
+                this.memItem.Memory = {};
+                this.memItem.Memory.Free = formatBytes(freeMemory);
+                this.memItem.Memory.Total = formatBytes(totalMemory);
+                this.memItem.Memory.PercentUsed = Math.round((freeMemory/totalMemory)*100) + "%";
+            }
+            return this.memItem;
+
+        } catch (err) {
+            console.error(`PC.getMemory(): ${err.message}`);
+            if (withPCName) {
+                this.Memory[this.Hostname] = err.message;
+            } else {
+                this.Memory = err.message;
+            }
+        }
+        return this.Memory;
+    }
+    async getAll() {
+        try {
             //throw new Error("CPU");
-            this.cpuData = await this.getCPU();
+            this.cpuData = await this.getCPU(false);
         } catch (cpuerr) {
             this.cpuData = {CPU: cpuerr.message};
         }
         try {
             //throw new Error("HDD");
-            this.hddData = await this.getHDDs();
+            this.hddData = await this.getHDDs(false);
         } catch (hdderr) {
             this.hddData = {HDDs: hdderr.message};
         }
 
         try {
-            this.memData = this.getMemory();
             //throw new Error("Memory");
+            this.memData = this.getMemory(false);
         } catch (memerr) {
             this.memData = {Memory: memerr.message};
         }
@@ -147,7 +198,7 @@ class PC {
                     ...this.cpuData,
                     ...this.memData,
                     ...this.hddData
-                //  }).slice(0,-1) // Use this is the last value is garbage
+                //  }).slice(0,-1) // Use this if the last value is garbage
             }}
         } catch (error) {
             this.allObject[os.hostname()] = error.message;
