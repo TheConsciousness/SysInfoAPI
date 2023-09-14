@@ -1,29 +1,42 @@
 # SysInfoAPI
-Small API written in Node to retrieve system software/hardware information and return it to the user.
-Frontend written in React.
+Small API written in NodeJS to retrieve system hardware information. The frontend has been developed using React and [CoreUI](https://coreui.io/react/), and leverages Redux for state management. Uses LocalStorage for storing persistent data.
 
 ![sysinfoapi_ui](https://github.com/TheConsciousness/SysInfoAPI/assets/14192161/e7de9a0c-baee-470b-8777-9d6d61c29d10)
 
 ## Installing and running
 
-1. Clone or download the project.
-2. Run the commands below:
+### Prerequisites
 
-```
-bash
+ NodeJS
+ 
+ NPM
+
+### Instructions
+
+1. Clone or download the project from the [main](https://github.com/TheConsciousness/SysInfoAPI/tree/main) branch.
+2. Use terminal to `cd` to the project directory.
+3. Run the commands below:
+
+```bash
 $ npm install
 $ sudo npm install pm2 -g
 $ npm start 
 ```
 
-#### Environment
-Dev Frontend:
-http://localhost:3000
+4. Browse to frontend: http://localhost:3000
+5. Make API calls to backend: http://localhost:1337 using calls below.
 
-Dev Backend:
-http://localhost:1337
+### Environment Variables
 
-#### Backend API Calls:
+|Name|Default Value|Usage|
+|----|----|----|
+|`SYSINFOAPI_PORT`|1337|Defines port used by the API.|
+|`PORT`|3000 (React)|Defines port used for React frontend development.|
+|`REACT_APP_DEBUG_MODE`|true|Turns on `console.log` statements for debugging.|
+|`REACT_APP_API_URL`|`/all`|The default API URL called by React.|
+
+
+### Backend API Calls:
 
 #### /cpu
 
