@@ -72,14 +72,21 @@ const DefaultLayout = () => {
 
   useEffect(() => {// useEffect is ran once at load
 
+    
+    if (process.env.REACT_APP_DEBUG_MODE == true) {
+      console.log("Debug Mode: Enabled");
+    } else {
+      console.log("Debug Mode: Disabled");
+    }
+
     // Load any saved_endpoints from localStorage into redux state
     const currEndpoints = window.localStorage.getItem("savedEndpoints");
     if (savedEndpoints == "") {
-      if (process.env.REACT_APP_DEBUG_MODE) console.debug("No localStorage savedEndpoints.")
+      if (process.env.REACT_APP_DEBUG_MODE == true) {console.debug("No localStorage savedEndpoints.");}
 
       if (currEndpoints) {
         if (currEndpoints.length > 0) {
-          if (process.env.REACT_APP_DEBUG_MODE) console.debug("Loading found localStorage savedEndpoints into redux.");
+          if (process.env.REACT_APP_DEBUG_MODE == true) {console.debug("Loading found localStorage savedEndpoints into redux.");}
           dispatch(setState({saved_endpoints: JSON.parse(currEndpoints)}));
         }
       }
@@ -103,12 +110,12 @@ const DefaultLayout = () => {
 
     if (document.hidden) {
       // Page is not visible (e.g., user switched tabs or minimized the window)
-      if (process.env.REACT_APP_DEBUG_MODE) console.debug("Window has been hidden. Clearing refresh interval.");
+      if (process.env.REACT_APP_DEBUG_MODE == true) {console.debug("Window has been hidden. Clearing refresh interval.");}
       clearInterval(refreshInterval);
       refreshInterval = null;
     } else {
       // Page is visible (e.g., user switched back to the tab)
-      if (process.env.REACT_APP_DEBUG_MODE) console.debug("Window has been shown. Starting refresh interval.");
+      if (process.env.REACT_APP_DEBUG_MODE == true) {console.debug("Window has been shown. Starting refresh interval.");}
       prepIntervalAndRefresh();
     }
   }
@@ -134,7 +141,7 @@ const DefaultLayout = () => {
 
   const manualRefresh = () => { // Mostly used to spin the refresh icon and then call refresh function.
 
-    if (process.env.REACT_APP_DEBUG_MODE) console.debug("Manual Refresh");
+    if (process.env.REACT_APP_DEBUG_MODE == true) {console.debug("Manual Refresh");}
     dispatch(setState({is_spinning: true}));
     prepIntervalAndRefresh();
   }
@@ -157,7 +164,7 @@ const DefaultLayout = () => {
     const inputEndpoint = document.getElementById('textBoxApiEndpoint').value;
     let currEndpoints = JSON.parse(window.localStorage.getItem("savedEndpoints"));
 
-    if (process.env.REACT_APP_DEBUG_MODE) console.debug(`Adding host: ${JSON.stringify(inputEndpoint)}`)
+    if (process.env.REACT_APP_DEBUG_MODE == true) {console.debug(`Adding host: ${JSON.stringify(inputEndpoint)}`);}
 
     if (!inputEndpoint) return; // Return if nothing in textbox
     if (currEndpoints) {
@@ -191,13 +198,13 @@ const DefaultLayout = () => {
   const updatePCStats = async () => {
     const updatePCEndpoint = window.localStorage.getItem("apiEndPoint") || localApiEndpoint;
 
-    if (process.env.REACT_APP_DEBUG_MODE) console.debug("Fetching:", updatePCEndpoint);
+    if (process.env.REACT_APP_DEBUG_MODE == true) {console.debug("Fetching:", updatePCEndpoint);}
 
     try {
       const response = await fetch(updatePCEndpoint);
       const apiResponse = await response.json();
 
-      if (process.env.REACT_APP_DEBUG_MODE) console.debug("Fetched:", apiResponse);
+      if (process.env.REACT_APP_DEBUG_MODE == true) {console.debug("Fetched:", apiResponse);}
         
       //addEndpoint(updatePCEndpoint); // On successful fetch, try adding the host to the storage.
 

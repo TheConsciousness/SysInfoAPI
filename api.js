@@ -1,7 +1,10 @@
+require('dotenv').config();
 const port = process.env.SYSINFOAPI_PORT || 1337;
 const http = require('http');
 const fs = require('fs');
 const PC = require("./classes/PC");
+
+console.log("Trying to start web server on port: ", port);
 
 http.createServer(async (req,res)=> {
     const currentPC = new PC();

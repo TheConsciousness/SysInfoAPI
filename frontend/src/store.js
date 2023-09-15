@@ -6,8 +6,7 @@ const initialState = {
   modal_visible: false,
   api_endpoint: "",
   is_spinning: false,
-  saved_endpoints: ['http://localhost:1337/all', 'http://192.168.1.11:1337/all'],
-  sidebarShow: false,
+  saved_endpoints: ['http://localhost:1337/all'],
   pcStats: {
     "PC_Name": {
       "CPU": {
@@ -18,6 +17,7 @@ const initialState = {
       },
       "Memory": {
         "Free": "0 GB",
+        "Used": "0 GB",
         "Total": "0 GB",
         "PercentUsed": "0%"
       },
