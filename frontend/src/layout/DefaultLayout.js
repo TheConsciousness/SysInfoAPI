@@ -333,7 +333,7 @@ const DefaultLayout = () => {
                           <CIcon className="me-2" icon={cilStorage} size="lg" />
                           <span>Used</span>
                           <span className="ms-auto fw-semibold">
-                            <span className="text-medium-emphasis small mr-10">({pcStatsObj[pcStatKey].Memory.Free} / {pcStatsObj[pcStatKey].Memory.Total})</span>
+                            <span className="text-medium-emphasis small mr-10">({pcStatsObj[pcStatKey].Memory.Used} / {pcStatsObj[pcStatKey].Memory.Total})</span>
                             {pcStatsObj[pcStatKey].Memory.PercentUsed}
                           </span>
                         </div>

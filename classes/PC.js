@@ -119,7 +119,7 @@ class PC {
                         _blocks: formatBytes(disk._blocks),
                         _used: formatBytes(disk._used)
                     }
-                }).slice(0,-1);
+                })
                 
             if (withPCName) {
                 this.HDDs = {[this.Hostname]:{HDDs:mappedDisks}}
@@ -143,20 +143,23 @@ class PC {
         this.memItem = {};
 
         try {
-            const freeMemory = os.freemem();
-            const totalMemory = os.totalmem();
+            const freeMemory = parseInt(os.freemem());
+            const totalMemory = parseInt(os.totalmem());
+			const usedMemory = totalMemory - freeMemory;
 
             if (withPCName) {
                 this.memItem[this.Hostname] = {};
                 this.memItem[this.Hostname].Memory = {};
                 this.memItem[this.Hostname].Memory.Free = formatBytes(freeMemory);
+				this.memItem[this.Hostname].Memory.Used = formatBytes(usedMemory);
                 this.memItem[this.Hostname].Memory.Total = formatBytes(totalMemory);
-                this.memItem[this.Hostname].Memory.PercentUsed = Math.round(((totalMemory - freeMemory)/freeMemory)*100)+"%";
+                this.memItem[this.Hostname].Memory.PercentUsed = Math.round((usedMemory/freeMemory)*100)+"%";
             } else {
                 this.memItem.Memory = {};
                 this.memItem.Memory.Free = formatBytes(freeMemory);
+                this.memItem.Memory.Used = formatBytes(usedMemory);
                 this.memItem.Memory.Total = formatBytes(totalMemory);
-                this.memItem.Memory.PercentUsed = Math.round((freeMemory/totalMemory)*100) + "%";
+                this.memItem.Memory.PercentUsed = Math.round((usedMemory/totalMemory)*100) + "%";
             }
             return this.memItem;
 
@@ -198,7 +201,6 @@ class PC {
                     ...this.cpuData,
                     ...this.memData,
                     ...this.hddData
-                //  }).slice(0,-1) // Use this if the last value is garbage
             }}
         } catch (error) {
             this.allObject[os.hostname()] = error.message;
