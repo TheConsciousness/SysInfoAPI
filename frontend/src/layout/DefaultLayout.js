@@ -75,21 +75,46 @@ const DefaultLayout = () => {
     // Load any saved_endpoints from localStorage into redux state
     const currEndpoints = window.localStorage.getItem("savedEndpoints");
     if (savedEndpoints == "") {
-      if (process.env.REACT_APP_DEBUG_MODE) console.log("No localStorage savedEndpoints.")
+      if (process.env.REACT_APP_DEBUG_MODE) console.debug("No localStorage savedEndpoints.")
+
       if (currEndpoints) {
         if (currEndpoints.length > 0) {
-          if (process.env.REACT_APP_DEBUG_MODE) console.log("Loading found localStorage savedEndpoints into redux.");
+          if (process.env.REACT_APP_DEBUG_MODE) console.debug("Loading found localStorage savedEndpoints into redux.");
           dispatch(setState({saved_endpoints: JSON.parse(currEndpoints)}));
         }
+      }
     }
-  }
-    
+
     prepIntervalAndRefresh(); // Start first stat refresh and start the setInterval
-    return () => clearInterval(refreshInterval); // Cleanup
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      // Cleanup and clear intervals and eventlisteners
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }
   }, []);
 
+  const handleVisibilityChange = () => {
+    // Used to clear the setInterval when the page is hidden from the screen
+    // and restart it upon being viewed again.
+
+    if (document.hidden) {
+      // Page is not visible (e.g., user switched tabs or minimized the window)
+      if (process.env.REACT_APP_DEBUG_MODE) console.debug("Window has been hidden. Clearing refresh interval.");
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    } else {
+      // Page is visible (e.g., user switched back to the tab)
+      if (process.env.REACT_APP_DEBUG_MODE) console.debug("Window has been shown. Starting refresh interval.");
+      prepIntervalAndRefresh();
+    }
+  }
+
   const prepIntervalAndRefresh = () => {
-    // Refresh the PC stats and setInterval if none are set.
+    // Refresh the PC stats and setInterval if none is active.
     updatePCStats();
 
     if (refreshInterval == null) {
@@ -109,7 +134,7 @@ const DefaultLayout = () => {
 
   const manualRefresh = () => { // Mostly used to spin the refresh icon and then call refresh function.
 
-    if (process.env.REACT_APP_DEBUG_MODE) console.log("Manual Refresh");
+    if (process.env.REACT_APP_DEBUG_MODE) console.debug("Manual Refresh");
     dispatch(setState({is_spinning: true}));
     prepIntervalAndRefresh();
   }
@@ -127,12 +152,12 @@ const DefaultLayout = () => {
     dispatch(setState({modal_visible: false}));
   }
   // eslint-disable-next-line no-unused-vars
-  const addEndpoint = (host='') => { // Add the API endpoint from the settings textbox into redux and localStorage.
+  const addEndpoint = () => { // Add the API endpoint from the settings textbox into redux and localStorage.
 
-    const inputEndpoint = host || document.getElementById('textBoxApiEndpoint').value;
+    const inputEndpoint = document.getElementById('textBoxApiEndpoint').value;
     let currEndpoints = JSON.parse(window.localStorage.getItem("savedEndpoints"));
 
-    console.log(`Adding host: ${JSON.stringify(inputEndpoint)}`)
+    if (process.env.REACT_APP_DEBUG_MODE) console.debug(`Adding host: ${JSON.stringify(inputEndpoint)}`)
 
     if (!inputEndpoint) return; // Return if nothing in textbox
     if (currEndpoints) {
@@ -166,16 +191,15 @@ const DefaultLayout = () => {
   const updatePCStats = async () => {
     const updatePCEndpoint = window.localStorage.getItem("apiEndPoint") || localApiEndpoint;
 
-    
-    if (process.env.REACT_APP_DEBUG_MODE) console.log("Fetching:", updatePCEndpoint);
+    if (process.env.REACT_APP_DEBUG_MODE) console.debug("Fetching:", updatePCEndpoint);
 
     try {
       const response = await fetch(updatePCEndpoint);
       const apiResponse = await response.json();
 
-      if (process.env.REACT_APP_DEBUG_MODE) console.log("Fetched:", apiResponse);
+      if (process.env.REACT_APP_DEBUG_MODE) console.debug("Fetched:", apiResponse);
         
-      addEndpoint(updatePCEndpoint); // On successful fetch, try adding the host to the storage.
+      //addEndpoint(updatePCEndpoint); // On successful fetch, try adding the host to the storage.
 
       dispatch(setState({ pcStats: apiResponse }));
       dispatch(setState({is_spinning: false}));
@@ -184,14 +208,15 @@ const DefaultLayout = () => {
 
     } catch (err) {
       console.error('Error fetching data:', err.message);
-        
+
+      console.error(`${retryCount} out of ${retryMaxCount} retries before stopping.`);
+
       if(retryCount >= retryMaxCount) {
-        console.log("Max retries hit, stopping refresh.");
+        console.error("Max retries hit, stopping refresh interval.");
         clearInterval(refreshInterval);
         refreshInterval = null;
         dispatch(setState({is_spinning: false}));
       }
-      console.log(`${retryCount} out of ${retryMaxCount} retries before stopping.`);
       retryCount++;
 
       showAlert(err.message);
@@ -209,7 +234,7 @@ const DefaultLayout = () => {
               <CModalTitle>Settings</CModalTitle>
             </CModalHeader>
             <CModalBody>
-            <CFormLabel htmlFor="basic-url">Backend API URL:</CFormLabel>
+            <CFormLabel htmlFor="textBoxApiEndpoint">Backend API URL:</CFormLabel>
             <CInputGroup className="mb-3">
               <CDropdown variant="input-group">
 
