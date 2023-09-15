@@ -76,20 +76,45 @@ const DefaultLayout = () => {
     const currEndpoints = window.localStorage.getItem("savedEndpoints");
     if (savedEndpoints == "") {
       if (process.env.REACT_APP_DEBUG_MODE) console.log("No localStorage savedEndpoints.")
+
       if (currEndpoints) {
         if (currEndpoints.length > 0) {
           if (process.env.REACT_APP_DEBUG_MODE) console.log("Loading found localStorage savedEndpoints into redux.");
           dispatch(setState({saved_endpoints: JSON.parse(currEndpoints)}));
         }
+      }
     }
-  }
-    
+
     prepIntervalAndRefresh(); // Start first stat refresh and start the setInterval
-    return () => clearInterval(refreshInterval); // Cleanup
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      // Cleanup and clear intervals and eventlisteners
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }
   }, []);
 
+  const handleVisibilityChange = () => {
+    // Used to clear the setInterval when the page is hidden from the screen
+    // and restart it upon being viewed again.
+
+    if (document.hidden) {
+      // Page is not visible (e.g., user switched tabs or minimized the window)
+      if (process.env.REACT_APP_DEBUG_MODE) console.log("Window has been hidden. Clearing refresh interval.");
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    } else {
+      // Page is visible (e.g., user switched back to the tab)
+      if (process.env.REACT_APP_DEBUG_MODE) console.log("Window has been shown. Starting refresh interval.");
+      prepIntervalAndRefresh();
+    }
+  }
+
   const prepIntervalAndRefresh = () => {
-    // Refresh the PC stats and setInterval if none are set.
+    // Refresh the PC stats and setInterval if none is active.
     updatePCStats();
 
     if (refreshInterval == null) {
@@ -127,9 +152,9 @@ const DefaultLayout = () => {
     dispatch(setState({modal_visible: false}));
   }
   // eslint-disable-next-line no-unused-vars
-  const addEndpoint = (host='') => { // Add the API endpoint from the settings textbox into redux and localStorage.
+  const addEndpoint = () => { // Add the API endpoint from the settings textbox into redux and localStorage.
 
-    const inputEndpoint = host || document.getElementById('textBoxApiEndpoint').value;
+    const inputEndpoint = document.getElementById('textBoxApiEndpoint').value;
     let currEndpoints = JSON.parse(window.localStorage.getItem("savedEndpoints"));
 
     console.log(`Adding host: ${JSON.stringify(inputEndpoint)}`)
@@ -166,7 +191,6 @@ const DefaultLayout = () => {
   const updatePCStats = async () => {
     const updatePCEndpoint = window.localStorage.getItem("apiEndPoint") || localApiEndpoint;
 
-    
     if (process.env.REACT_APP_DEBUG_MODE) console.log("Fetching:", updatePCEndpoint);
 
     try {
@@ -175,7 +199,7 @@ const DefaultLayout = () => {
 
       if (process.env.REACT_APP_DEBUG_MODE) console.log("Fetched:", apiResponse);
         
-      addEndpoint(updatePCEndpoint); // On successful fetch, try adding the host to the storage.
+      //addEndpoint(updatePCEndpoint); // On successful fetch, try adding the host to the storage.
 
       dispatch(setState({ pcStats: apiResponse }));
       dispatch(setState({is_spinning: false}));

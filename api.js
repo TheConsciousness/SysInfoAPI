@@ -15,7 +15,7 @@ http.createServer(async (req,res)=> {
     switch (req.url) {
         case "/":
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.end("<a href=/cpu>CPU</a><br/><a href=/memory>Memory</a><br/><a href=/all>All</a>");
+            res.end("<a href=/cpu>CPU</a><br/><a href=/memory>Memory</a><br/><a href=/hdd>HDDs</a><br/><a href=/all>All</a>");
             break;
         case "/favicon.ico":
             res.setHeader('Content-Type', 'image/x-icon');
