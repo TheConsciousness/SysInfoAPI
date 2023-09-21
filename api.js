@@ -1,50 +1,56 @@
 const port = process.env.SYSINFOAPI_PORT || 1337;
-const http = require('http');
+const express = require('express');
+const https = require('https');
 const fs = require('fs');
 const PC = require("./classes/PC");
 
-http.createServer(async (req,res)=> {
-    const currentPC = new PC();
+const app = express();
+const currentPC = new PC();
 
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+app.get('/', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.send("<a href=/cpu>CPU</a><br/><a href=/memory>Memory</a><br/><a href=/hdd>HDDs</a><br/><a href=/all>All</a>");
+});
+app.get('/memory', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    res.statusCode = 200;
-    let faviconPath = require('path').join(__dirname, 'favicon.ico');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.send(JSON.stringify(currentPC.getMemory(true), null, 2));
+});
+app.get('/cpu', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.send(JSON.stringify(await currentPC.getCPU(true), null, 2));
+});
+app.get('/hdd', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.send(JSON.stringify(await currentPC.getHDDs(true), null, 2));
+});
+app.get('/all', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.send(JSON.stringify(await currentPC.getAll(), null, 2));
+});
+app.get('/current', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.header('Access-Control-Allow-Origin', '*');
+    res.send(JSON.stringify(currentPC, null, 2));
+});
 
-    switch (req.url) {
-        case "/":
-            res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.end("<a href=/cpu>CPU</a><br/><a href=/memory>Memory</a><br/><a href=/hdd>HDDs</a><br/><a href=/all>All</a>");
-            break;
-        case "/favicon.ico":
-            res.setHeader('Content-Type', 'image/x-icon');
-            fs.readFile(faviconPath, (err, data) => {
-                if (err) {
-                    res.statusCode = 500;
-                    res.end('Error reading favicon.ico');
-                } else {
-                    res.end(data);
-                }
-            })
-            break;
-        case "/memory":
-            res.end(JSON.stringify(currentPC.getMemory(true), null, 2));
-            break;
-        case "/cpu":
-            res.end(JSON.stringify(await currentPC.getCPU(true), null, 2));
-            break;
-        case "/hdd":
-            res.end(JSON.stringify(await currentPC.getHDDs(true), null, 2));
-            break;
-        case "/all":
-            res.end(JSON.stringify(await currentPC.getAll(), null, 2));
-            break;
-        default:
-            res.setHeader('Content-Type', 'text/html');
-            res.statusCode = 404;
-            res.end("<span style=font-size:50vw;>404!</span>");
-            break;
-    }
-    
-}).listen(port);
+const options = {
+  key: fs.readFileSync('api_cert.key'),
+  cert: fs.readFileSync('api_cert.cert'),
+};
+
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.status(404).send("Not found.");
+  });
+
+const server = https.createServer(options, app);
+
+server.listen(port, () => {
+  console.log(`Server is running on https://localhost:${port}`);
+});
