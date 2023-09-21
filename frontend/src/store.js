@@ -6,7 +6,7 @@ const initialState = {
   modal_visible: false,
   api_endpoint: "",
   is_spinning: false,
-  saved_endpoints: ['http://localhost:1337/all', 'http://192.168.1.11:1337/all'],
+  saved_endpoints: ['https://trashtrackr.com:1337/all', 'https://jordanbrinkman.dev:1337/all', 'https://jordanbrinkman.dev:1338/all', 'https://jordanbrinkman.dev:1339/all'],
   sidebarShow: false,
   pcStats: {
     "PC_Name": {
