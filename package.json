@@ -1,11 +1,11 @@
 {
   "name": "sysinfoapi",
-  "version": "1.0.0",
-  "description": "Small API written in Node to retrieve system software/hardware information and return it to the user.",
+  "version": "2.0.0",
+  "description": "Small API written in Node to retrieve system hardware information.",
   "main": "api.js",
   "scripts": {
     "start": "concurrently \"npm run server\" \"npm run frontend\"",
-    "server": "pm2 update && pm2 start api.js --name SysInfoAPI --log api.log",
+    "server": "pm2 update && pm2 start api.js --name SysInfoAPI --log api.log --watch",
     "frontend": "npm run --prefix frontend start"
   },
   "repository": {

@@ -1,5 +1,6 @@
 const os = require('os');
 const nodeDiskInfo = require('node-disk-info');
+const { memoryUsage } = require('process');
 
 const formatBytes = (bytes, decimals = 2) => {
     if (bytes === 0) return '0 Bytes';
@@ -72,46 +73,37 @@ function cpuAverage() {
   }
 
 class PC {
-    allObject = {};
+    //allObject = {};
     Hostname = "";
     HDDs = {};
     Memory = {};
     CPU = {};
 
-    cpuData = {};
-    hddData = {};
-    memData = {};
-
     constructor() {
         this.Hostname = os.hostname();
     }
 
-    async getCPU(withPCName=false) {
+    async getCPU() {
         this.CPU = {};
+        this.CPU.Used = "";
 
         try {
             var cpuLoad = await getCPULoadAVG(1000,100);
-            if (withPCName) {
-                this.CPU = {[this.Hostname]:{CPU:{Used: cpuLoad+"%"}}};
-            } else {
-                this.CPU = {CPU:{Used: cpuLoad+"%"}};
-            }
+            this.CPU.Used = cpuLoad + "%";
+
             //throw new Error("Failed CPU try statement!");
+
         } catch (err) {
             console.error(`PC.getCPU(): ${err.message}`);
-            if (withPCName) {
-                this.CPU = {[this.Hostname]:{CPU:{Error: err.message}}};
-            } else {
-                this.CPU = {CPU:{Error: err.message}};
-            }
+            this.CPU = {"Error": err.message};
         }
         return this.CPU;
     }
-    async getHDDs(withPCName=false) {
+    async getHDDs() {
         this.HDDs = {};
         try {
             const disks = await nodeDiskInfo.getDiskInfo();
-            const mappedDisks = 
+            this.HDDs = 
                 disks.map(disk => {
                     return {
                         ...disk,
@@ -120,92 +112,56 @@ class PC {
                         _used: formatBytes(disk._used)
                     }
                 })
-                
-            if (withPCName) {
-                this.HDDs = {[this.Hostname]:{HDDs:mappedDisks}}
-            } else {
-                this.HDDs = {HDDs:mappedDisks};
-            }
+            //throw new Error("Failed HDD try statement!");
 
         } catch (err) {
             console.error(`PC.getHDDs(): ${err.message}`);
-            if (withPCName) {
-                this.HDDs = {[this.Hostname]:{HDDs:err.message}};
-            } else {
-                this.HDDs = {HDDs:err.message};
-            }
+            this.HDDs = {"Error": err.message};
         }
-
-        //throw new Error("Failed HDD try statement!");
         return this.HDDs;
     }
-    getMemory(withPCName=false) {
-        this.memItem = {};
+    getMemory() {
 
         try {
             const freeMemory = parseInt(os.freemem());
             const totalMemory = parseInt(os.totalmem());
 			const usedMemory = totalMemory - freeMemory;
 
-            if (withPCName) {
-                this.memItem[this.Hostname] = {};
-                this.memItem[this.Hostname].Memory = {};
-                this.memItem[this.Hostname].Memory.Free = formatBytes(freeMemory);
-				this.memItem[this.Hostname].Memory.Used = formatBytes(usedMemory);
-                this.memItem[this.Hostname].Memory.Total = formatBytes(totalMemory);
-                this.memItem[this.Hostname].Memory.PercentUsed = Math.round((usedMemory/freeMemory)*100)+"%";
-            } else {
-                this.memItem.Memory = {};
-                this.memItem.Memory.Free = formatBytes(freeMemory);
-                this.memItem.Memory.Used = formatBytes(usedMemory);
-                this.memItem.Memory.Total = formatBytes(totalMemory);
-                this.memItem.Memory.PercentUsed = Math.round((usedMemory/totalMemory)*100) + "%";
-            }
-            return this.memItem;
+            this.Memory = {};
+            this.Memory.Free = formatBytes(freeMemory);
+            this.Memory.Used = formatBytes(usedMemory);
+            this.Memory.Total = formatBytes(totalMemory);
+            this.Memory.PercentUsed = Math.round((usedMemory/totalMemory)*100)+"%";
+
+            //throw new Error("Failed Memory try statement!");
 
         } catch (err) {
             console.error(`PC.getMemory(): ${err.message}`);
-            if (withPCName) {
-                this.Memory[this.Hostname] = err.message;
-            } else {
-                this.Memory = err.message;
-            }
+            this.Memory = {"Error": err.message};
         }
         return this.Memory;
     }
     async getAll() {
         try {
-            //throw new Error("CPU");
-            this.cpuData = await this.getCPU(false);
+            //throw new Error("Test CPU Error");
+            this.CPU = await this.getCPU(false);
         } catch (cpuerr) {
-            this.cpuData = {CPU: cpuerr.message};
+            this.CPU = {"Error": cpuerr.message};
         }
         try {
-            //throw new Error("HDD");
-            this.hddData = await this.getHDDs(false);
-        } catch (hdderr) {
-            this.hddData = {HDDs: hdderr.message};
-        }
-
-        try {
-            //throw new Error("Memory");
-            this.memData = this.getMemory(false);
+            //throw new Error("Test Memory Error");
+            this.Memory = this.getMemory(false);
         } catch (memerr) {
-            this.memData = {Memory: memerr.message};
+            this.Memory = {"Error": memerr.message};
+        }
+        try {
+            //throw new Error("Test HDD Error");
+            this.HDDs = await this.getHDDs(false);
+        } catch (hdderr) {
+            this.HDDs = {"Error": hdderr.message};
         }
 
-        try {
-            //throw new Error("All error!");
-            this.allObject = {
-                [os.hostname()]:{
-                    ...this.cpuData,
-                    ...this.memData,
-                    ...this.hddData
-            }}
-        } catch (error) {
-            this.allObject[os.hostname()] = error.message;
-        }
-        return this.allObject;
+        return this;
     }
 }
 

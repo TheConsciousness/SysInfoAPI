@@ -60,7 +60,7 @@ const DefaultLayout = () => {
   const isSpinning = useSelector((state) => state.is_spinning);
   const savedEndpoints = useSelector((state) => state.saved_endpoints);
 
-  var pcStatKey = Object.keys(pcStatsObj)[0]; // The computer name that is stored in the first key in the JSON.
+  var pcStatKey = pcStatsObj.Hostname; // The computer name that is stored in the first key in the JSON.
   const retryMaxCount = 2; // Max amount of retries to try fetching API after failure.
   var retryCount = 0; // Counter for retrying failed fetches
   var refreshInterval; // Stores the setInterval id for future clearing.
@@ -266,7 +266,7 @@ const DefaultLayout = () => {
           <CRow>
             <CCol xs>
               <CCard className="mb-4">
-                <CCardHeader>{Object.keys(pcStatsObj)[0]}
+                <CCardHeader>{pcStatKey}
                   <div className='float-right'>
                     <CTooltip content="Settings">
                       <CIcon icon={cilCog} id='settingsIcon' className='mr-10' onClick={showSettings} />
@@ -285,10 +285,10 @@ const DefaultLayout = () => {
                         <div className="progress-group-header">
                           <CIcon className="me-2" icon={cilListRich} size="lg" />
                           <span>Used</span>
-                          <span className="ms-auto fw-semibold">{pcStatsObj[pcStatKey].CPU ? pcStatsObj[pcStatKey].CPU.Used : 0}</span>
+                          <span className="ms-auto fw-semibold">{pcStatsObj.CPU ? pcStatsObj.CPU.Used : 0}</span>
                         </div>
                         <div className="progress-group-bars">
-                          <CProgress color="success" value={parseInt(pcStatsObj[pcStatKey].CPU ? pcStatsObj[pcStatKey].CPU.Used : 0)} />
+                          <CProgress color="success" value={parseInt(pcStatsObj.CPU ? pcStatsObj.CPU.Used : 0)} />
                         </div>
                       </div>
 
@@ -333,12 +333,12 @@ const DefaultLayout = () => {
                           <CIcon className="me-2" icon={cilStorage} size="lg" />
                           <span>Used</span>
                           <span className="ms-auto fw-semibold">
-                            <span className="text-medium-emphasis small mr-10">({pcStatsObj[pcStatKey].Memory.Used} / {pcStatsObj[pcStatKey].Memory.Total})</span>
-                            {pcStatsObj[pcStatKey].Memory.PercentUsed}
+                            <span className="text-medium-emphasis small mr-10">({pcStatsObj.Memory.Used} / {pcStatsObj.Memory.Total})</span>
+                            {pcStatsObj.Memory.PercentUsed}
                           </span>
                         </div>
                         <div className="progress-group-bars">
-                          <CProgress color="warning" value={parseInt(pcStatsObj[pcStatKey].Memory.PercentUsed.replace(/%/g, ''))} />
+                          <CProgress color="warning" value={parseInt(pcStatsObj.Memory.PercentUsed.replace(/%/g, ''))} />
                         </div>
                       </div>
                     </CCol>
@@ -361,7 +361,7 @@ const DefaultLayout = () => {
                     </CTableHead>
 
                     <CTableBody>
-                      {pcStatsObj[pcStatKey].HDDs.map((item, index) => (
+                      {pcStatsObj.HDDs.map((item, index) => (
                         <CTableRow v-for="item in tableItems" key={index}>
                           <CTableDataCell>
                             <div className="small text-medium-emphasis">{item._filesystem}</div>
