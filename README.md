@@ -14,17 +14,20 @@ Small API written in NodeJS to retrieve system hardware information. The fronten
 ### Instructions
 
 1. Clone or download the project from the [main](https://github.com/TheConsciousness/SysInfoAPI/tree/main) branch.
-2. Use terminal to `cd` to the project directory.
-3. Run the commands below:
-
+2. Use terminal to `cd` to the project directory
+3. If needing a self-signed certificate, run:
+```bash
+openssl req -nodes -new -x509 -keyout api_cert.key -out api_cert.cert
+```
+4. Run the commands below:
 ```bash
 $ npm install
 $ sudo npm install pm2 -g
 $ npm start 
 ```
 
-4. Browse to frontend: http://localhost:3000
-5. Make API calls to backend: http://localhost:1337 using calls below.
+5. Browse to frontend: http://localhost:3000
+6. Make API calls to backend: http://localhost:1337 using calls below.
 
 ### Environment Variables
 
