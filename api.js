@@ -1,3 +1,4 @@
+require('dotenv').config();
 const port = process.env.SYSINFOAPI_PORT || 1337;
 const express = require('express');
 const https = require('https');
